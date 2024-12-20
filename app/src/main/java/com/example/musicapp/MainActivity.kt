@@ -72,47 +72,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-
-//            MusicAppTheme {
-//                Surface(
-//                    modifier = Modifier.fillMaxSize(),
-//                    color = MaterialTheme.colorScheme.background
-//                ) {
-//                    val navController = rememberNavController()
-//                    val authViewModel: AuthViewModel = hiltViewModel()
-//
-//                    // Determine initial route based on login state
-//                    var startDestination by remember {
-//                        mutableStateOf(
-//                            if (authViewModel.isUserLoggedIn()) "main" else "login"
-//                        )
-//                    }
-//
-//                    NavHost(navController = navController, startDestination = startDestination) {
-//                        composable("login") {
-//                            LoginScreen(
-//                                authViewModel = authViewModel,
-//                                activity = this@MainActivity,
-//                                onLoginSuccess = {
-//                                    navController.navigate("main") {
-//                                        popUpTo("login") { inclusive = true }
-//                                    }
-//                                }
-//                            )
-//                        }
-//                        composable("main") {
-//                            MainAppScreen(
-//                                authViewModel = authViewModel,
-//                                onLogout = {
-//                                    navController.navigate("login") {
-//                                        popUpTo("main") { inclusive = true }
-//                                    }
-//                                }
-//                            )
-//                        }
-//                    }
-//                }
-//            }
         }
     }
 }
@@ -155,18 +114,6 @@ fun NavGraphBuilder.mainGraph(navController: NavHostController, authViewModel: A
                     navController.navigate("trackDetails/$trackId")
                 }
             )
-        }
-        composable(
-            "trackDetails/{trackId}",
-            arguments = listOf(navArgument("trackId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val trackId = backStackEntry.arguments?.getString("trackId")
-            val track = likedTracksViewModel.getTrackById(trackId ?: "")
-            if (track != null) {
-                TrackPlayerScreen(track = track)
-            } else {
-                Text("Track not found")
-            }
         }
     }
 }

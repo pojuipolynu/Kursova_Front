@@ -27,15 +27,30 @@ val fontFamily = FontFamily(
 
 // Set of Material typography styles to start with
 val Typography = Typography(
+    titleMedium = TextStyle(
+        fontFamily = fontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+    ),
     bodyLarge = TextStyle(
         fontFamily = fontFamily,
         fontWeight = FontWeight.Bold,
+        fontSize = 20.sp,
+    ),
+    bodyMedium = TextStyle(
+        fontFamily = fontFamily,
+        fontWeight = FontWeight.Normal,
         fontSize = 20.sp,
     ),
     bodySmall = TextStyle(
         fontFamily = fontFamily,
         fontWeight = FontWeight.Light,
         fontSize = 16.sp,
+    ),
+    labelSmall = TextStyle(
+        fontFamily = fontFamily,
+        fontWeight = FontWeight.Thin,
+        fontSize = 14.sp,
     ),
     /* Other default text styles to override
     titleLarge = TextStyle(

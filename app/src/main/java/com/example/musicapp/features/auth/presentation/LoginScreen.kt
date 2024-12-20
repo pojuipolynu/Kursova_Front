@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.musicapp.R
+import com.example.musicapp.components.HeaderComponent
 import com.example.musicapp.features.auth.data.AuthResult
 import com.example.musicapp.features.auth.domain.AuthViewModel
 import com.example.musicapp.ui.theme.Black90
@@ -50,61 +51,72 @@ fun LoginScreen(
 ) {
     val authResult by authViewModel.authResult.collectAsState()
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(color = Black90)
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 16.dp)
     ) {
-        when (val result = authResult) {
-            is AuthResult.Idle -> {
-                Button(
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Red60,
-                        contentColor = Red60),
-                    shape = RoundedCornerShape(4.dp),
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    onClick = { authViewModel.signInWithGoogle(activity) })
-                {
-                    Row(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .background(color = Red60),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Ввійти через Google",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = White80,
-                            fontSize = 20.sp,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Image(
-                            painter = painterResource(R.drawable.play_icon),
-                            contentDescription = null,
-                            Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
-            is AuthResult.Loading -> {
-                Text("Loading...")
-            }
-            is AuthResult.Success -> {
-                // Navigate or perform action on successful login
-                onLoginSuccess()
-            }
-            is AuthResult.Error -> {
-                Column {
-                    Button(onClick = { authViewModel.signInWithGoogle(activity) }) {
-                        Text("Retry Sign in")
-                    }
-                    Text("Error: ${result.message}")
-                }
+        HeaderComponent(text = "Велкам)))")
 
+        Spacer(modifier = Modifier.size(24.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            when (val result = authResult) {
+                is AuthResult.Idle -> {
+                    Button(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Red60,
+                            contentColor = Red60
+                        ),
+                        shape = RoundedCornerShape(4.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { authViewModel.signInWithGoogle(activity) }
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .background(color = Red60),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Ввійти через Google",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = White80,
+                                fontSize = 20.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Image(
+                                painter = painterResource(R.drawable.play_icon),
+                                contentDescription = null,
+                                Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+                is AuthResult.Loading -> {
+                    Text("Loading...", color = White80)
+                }
+                is AuthResult.Success -> {
+                    onLoginSuccess()
+                }
+                is AuthResult.Error -> {
+                    Column {
+                        Button(onClick = { authViewModel.signInWithGoogle(activity) }) {
+                            Text("Retry Sign in")
+                        }
+                        Text(
+                            text = "Error: ${result.message}",
+                            color = Color.Red
+                        )
+                    }
+                }
             }
         }
     }

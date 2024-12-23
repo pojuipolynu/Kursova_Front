@@ -1,25 +1,20 @@
 package com.example.musicapp.features.main.likedtracks.presentation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.sp
-
-
 import android.media.MediaPlayer
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+//import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,14 +24,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.musicapp.components.HeaderComponent
 import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
 import com.example.musicapp.features.main.likedtracks.data.Track
-import com.example.musicapp.ui.theme.Black90
 import com.example.musicapp.ui.theme.White80
 import kotlinx.coroutines.delay
 
@@ -48,9 +42,25 @@ fun FavouriteScreen(
 ) {
     val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
     var currentTrack by remember { mutableStateOf<Track?>(null) }
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    var isPlaying by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         likedTracksViewModel.loadLikedTracks()
+    }
+
+    DisposableEffect(currentTrack) {
+        mediaPlayer?.release() // Звільняємо попередній MediaPlayer
+        if (currentTrack != null) {
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(currentTrack?.fileUrl)
+                prepare()
+            }
+        }
+        onDispose {
+            mediaPlayer?.release()
+            mediaPlayer = null
+        }
     }
 
     Box(
@@ -62,27 +72,27 @@ fun FavouriteScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Header
             HeaderComponent(text = "Ваша медіатека")
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Search bar
             OutlinedTextField(
                 value = "",
                 onValueChange = {},
                 placeholder = {
-                    Text(text = "Пошук", color = White80, style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        text = "Пошук",
+                        color = White80,
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.DarkGray, RoundedCornerShape(4.dp)),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
-//                    backgroundColor = Color.Transparent,
                     cursorColor = Color.White,
                     unfocusedTextColor = White80,
                     unfocusedPrefixColor = White80,
-//                    textColor = Color.White,
                     focusedBorderColor = Color.Transparent,
                     unfocusedBorderColor = Color.Transparent
                 ),
@@ -97,7 +107,6 @@ fun FavouriteScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Action Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -108,7 +117,6 @@ fun FavouriteScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // List of tracks
             LazyColumn(
                 modifier = Modifier.weight(1f)
             ) {
@@ -118,29 +126,38 @@ fun FavouriteScreen(
                         isLiked = likedTracksState.likedTrackIds.contains(track.id),
                         onLikeClick = { likedTracksViewModel.toggleLike(track.id) },
                         onTrackClick = {
-//                            onTrackClick(track.id)
                             currentTrack = track
+                            isPlaying = false // Скидаємо стан перед відтворенням нового треку
                         }
                     )
                 }
             }
         }
 
-        // Bottom track bar
         currentTrack?.let { track ->
             BottomTrackBar(
                 track = track,
-                onPlayClick = { /* Handle play action */ },
-                onTrackClick = { onTrackClick(track.id) },
+                isPlaying = isPlaying,
+                onPlayClick = {
+                    if (isPlaying) {
+                        mediaPlayer?.pause()
+                    } else {
+                        mediaPlayer?.start()
+                    }
+                    isPlaying = !isPlaying
+                },
+                onTrackClick = { onTrackClick(track.id) }
             )
         }
     }
 }
 
+
+
 @Composable
 fun ActionButton(text: String, icon: ImageVector) {
     Button(
-        onClick = { /* Handle button click */ },
+        onClick = {},
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9C3E3E)),
         modifier = Modifier
             .width(200.dp)
@@ -159,7 +176,12 @@ fun ActionButton(text: String, icon: ImageVector) {
 }
 
 @Composable
-fun BottomTrackBar(track: Track, onPlayClick: () -> Unit, onTrackClick: () -> Unit) {
+fun BottomTrackBar(
+    track: Track,
+    isPlaying: Boolean,
+    onPlayClick: () -> Unit,
+    onTrackClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -195,14 +217,13 @@ fun BottomTrackBar(track: Track, onPlayClick: () -> Unit, onTrackClick: () -> Un
         }
         IconButton(onClick = onPlayClick) {
             Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = "Play Icon",
+                imageVector = if (isPlaying) Icons.Outlined.PlayArrow else Icons.Default.PlayArrow,
+                contentDescription = if (isPlaying) "Pause Icon" else "Play Icon",
                 tint = Color.White
             )
         }
     }
 }
-
 
 @Composable
 fun TrackRow(
@@ -253,7 +274,6 @@ fun TrackRow(
         }
     }
 }
-
 
 @Composable
 fun TrackPlayerScreen(track: Track) {

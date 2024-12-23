@@ -42,6 +42,17 @@ class LikedTracksViewModel @Inject constructor(
         // Notify UI about playing state if needed
     }
 
+    fun pauseTrack() {
+        isPlaying = false
+    }
+
+    fun togglePlayPause() {
+        isPlaying = !isPlaying
+    }
+
+    fun isTrackPlaying(track: Track): Boolean {
+        return currentTrack?.id == track.id && isPlaying
+    }
 
     fun getTrackById(trackId: String): Track? {
         return likedTracksRepository.getTrackById(trackId)

@@ -1,6 +1,5 @@
 package com.example.musicapp.features.main.likedtracks.presentation
 
-import android.media.MediaPlayer
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,11 +9,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-//import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,7 +29,9 @@ import com.example.musicapp.components.HeaderComponent
 import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
 import com.example.musicapp.features.main.likedtracks.data.Track
 import com.example.musicapp.ui.theme.White80
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.delay
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,26 +40,11 @@ fun FavouriteScreen(
     onTrackClick: (String) -> Unit
 ) {
     val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
-    var currentTrack by remember { mutableStateOf<Track?>(null) }
-    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
-    var isPlaying by remember { mutableStateOf(false) }
+    val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
+    val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
 
     LaunchedEffect(Unit) {
         likedTracksViewModel.loadLikedTracks()
-    }
-
-    DisposableEffect(currentTrack) {
-        mediaPlayer?.release() // Звільняємо попередній MediaPlayer
-        if (currentTrack != null) {
-            mediaPlayer = MediaPlayer().apply {
-                setDataSource(currentTrack?.fileUrl)
-                prepare()
-            }
-        }
-        onDispose {
-            mediaPlayer?.release()
-            mediaPlayer = null
-        }
     }
 
     Box(
@@ -126,8 +110,8 @@ fun FavouriteScreen(
                         isLiked = likedTracksState.likedTrackIds.contains(track.id),
                         onLikeClick = { likedTracksViewModel.toggleLike(track.id) },
                         onTrackClick = {
-                            currentTrack = track
-                            isPlaying = false // Скидаємо стан перед відтворенням нового треку
+                            likedTracksViewModel.playTrack(track)
+                            onTrackClick(track.id)
                         }
                     )
                 }
@@ -139,20 +123,15 @@ fun FavouriteScreen(
                 track = track,
                 isPlaying = isPlaying,
                 onPlayClick = {
-                    if (isPlaying) {
-                        mediaPlayer?.pause()
-                    } else {
-                        mediaPlayer?.start()
-                    }
-                    isPlaying = !isPlaying
+                    likedTracksViewModel.togglePlayPause()
                 },
-                onTrackClick = { onTrackClick(track.id) }
+                onTrackClick = {
+                    onTrackClick(track.id)
+                }
             )
         }
     }
 }
-
-
 
 @Composable
 fun ActionButton(text: String, icon: ImageVector) {
@@ -217,7 +196,7 @@ fun BottomTrackBar(
         }
         IconButton(onClick = onPlayClick) {
             Icon(
-                imageVector = if (isPlaying) Icons.Outlined.PlayArrow else Icons.Default.PlayArrow,
+                imageVector = if (isPlaying) Icons.Default.PlayArrow else Icons.Default.PlayArrow,
                 contentDescription = if (isPlaying) "Pause Icon" else "Play Icon",
                 tint = Color.White
             )
@@ -276,30 +255,18 @@ fun TrackRow(
 }
 
 @Composable
-fun TrackPlayerScreen(track: Track) {
-    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
-    var isPlaying by remember { mutableStateOf(false) }
-    var currentPosition by remember { mutableStateOf(0f) }
+fun TrackPlayerScreen(
+    track: Track,
+    likedTracksViewModel: LikedTracksViewModel = hiltViewModel()
+) {
+    val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
+    val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
+    val currentPosition by likedTracksViewModel.currentPosition.collectAsState()
 
-    DisposableEffect(track.fileUrl) {
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(track.fileUrl)
-            prepare()
-        }
-
-        onDispose {
-            mediaPlayer?.release()
-            mediaPlayer = null
-        }
-    }
-
-    // Update current position periodically
-    LaunchedEffect(mediaPlayer) {
-        while (true) {
-            delay(1000) // Update every second
-            mediaPlayer?.let {
-                currentPosition = it.currentPosition.toFloat()
-            }
+    LaunchedEffect(currentTrack) {
+        while (isActive) { // Перевіряємо, чи не завершено LaunchedEffect
+            likedTracksViewModel.updateCurrentPosition()
+            delay(1000) // Оновлюємо кожну секунду
         }
     }
 
@@ -326,22 +293,17 @@ fun TrackPlayerScreen(track: Track) {
             color = Color.Gray
         )
         Slider(
-            value = currentPosition,
+            value = currentPosition.toFloat(),
             onValueChange = { newPosition ->
-                currentPosition = newPosition
-                mediaPlayer?.seekTo(newPosition.toInt())
+                likedTracksViewModel.seekTo(newPosition.toInt())
             },
-            valueRange = 0f..(mediaPlayer?.duration?.toFloat() ?: 1f)
+            valueRange = 0f..(likedTracksViewModel.getMediaPlayer()?.duration?.toFloat() ?: 1f)
         )
         Button(onClick = {
-            if (isPlaying) {
-                mediaPlayer?.pause()
-            } else {
-                mediaPlayer?.start()
-            }
-            isPlaying = !isPlaying
+            likedTracksViewModel.togglePlayPause()
         }) {
             Text(if (isPlaying) "Pause" else "Play")
         }
     }
 }
+

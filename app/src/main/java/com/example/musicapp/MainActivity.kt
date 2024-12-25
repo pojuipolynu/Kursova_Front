@@ -106,7 +106,12 @@ fun NavGraphBuilder.mainGraph(navController: NavHostController, authViewModel: A
             )
         }
         composable("profile") { ProfileScreen() }
-        composable("search") { SearchScreen() }
+        composable("search") { SearchScreen(
+            onTrackClick = { trackId ->
+                Log.d("FavouriteScreen", "Track ID: $trackId")
+                navController.navigate("trackDetails/$trackId")
+            }
+        ) }
         composable("favourite") {
             FavouriteScreen(
                 onTrackClick = { trackId ->

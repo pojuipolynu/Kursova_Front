@@ -1,6 +1,6 @@
 package com.example.musicapp.features.main.likedtracks.domain
 
-import android.media.MediaPlayer
+//import android.media.MediaPlayer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musicapp.features.main.likedtracks.data.LikedTracksRepository
@@ -10,10 +10,63 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.media.MediaPlayer
+import javax.inject.Singleton
+
+@Singleton
+class MediaPlayerManager @Inject constructor() {
+    private var mediaPlayer: MediaPlayer? = null
+
+    fun play(trackUrl: String, onCompletion: () -> Unit) {
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer().apply {
+                setOnCompletionListener {
+                    onCompletion()
+                }
+            }
+        } else {
+            mediaPlayer?.reset()
+        }
+
+        mediaPlayer?.apply {
+            setDataSource(trackUrl)
+            prepare()
+            start()
+        }
+    }
+
+    fun pause() {
+        mediaPlayer?.pause()
+    }
+
+    fun resume() {
+        mediaPlayer?.start()
+    }
+
+    fun stop() {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+    }
+
+    fun seekTo(position: Int) {
+        mediaPlayer?.seekTo(position)
+    }
+
+    fun getCurrentPosition(): Int {
+        return mediaPlayer?.currentPosition ?: 0
+    }
+
+    fun getDuration(): Int {
+        return mediaPlayer?.duration ?: 0
+    }
+}
+
 
 @HiltViewModel
 class LikedTracksViewModel @Inject constructor(
-    private val likedTracksRepository: LikedTracksRepository
+    private val likedTracksRepository: LikedTracksRepository,
+    private val mediaPlayerManager: MediaPlayerManager
 ) : ViewModel() {
 
     private val _likedTracksState = MutableStateFlow(LikedTracksState(emptyList(), emptySet()))
@@ -28,7 +81,7 @@ class LikedTracksViewModel @Inject constructor(
     private var _currentPosition = MutableStateFlow(0)
     val currentPosition: StateFlow<Int> = _currentPosition
 
-    private var mediaPlayer: MediaPlayer? = null
+//    private var mediaPlayer: MediaPlayer? = null
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -72,34 +125,34 @@ class LikedTracksViewModel @Inject constructor(
     fun toggleLike(trackId: String) {
         viewModelScope.launch {
             likedTracksRepository.toggleLike(trackId)
-            loadLikedTracks()
+
+            // Оновлення списку треків у стані
+            val updatedLikedIds = likedTracksRepository.getLikedTrackIds().toSet()
+            val updatedTracks = _likedTracksState.value.tracks.filter { updatedLikedIds.contains(it.id) }
+
+            _likedTracksState.value = _likedTracksState.value.copy(
+                tracks = updatedTracks,
+                likedTrackIds = updatedLikedIds
+            )
         }
     }
 
+
     fun playTrack(track: Track) {
-        if (_currentTrack.value == track && _isPlaying.value) {
-            // If the same track is already playing, do nothing
-            return
+        if (_currentTrack.value?.id != track.id) {
+            mediaPlayerManager.play(track.fileUrl) {
+                _isPlaying.value = false
+            }
+            _currentTrack.value = track
+            _isPlaying.value = true
+        } else if (!_isPlaying.value) {
+            mediaPlayerManager.resume()
+            _isPlaying.value = true
         }
-
-        // Release the previous MediaPlayer
-        mediaPlayer?.release()
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(track.fileUrl)
-            prepare()
-            start()
-        }
-
-        mediaPlayer?.setOnCompletionListener {
-            _isPlaying.value = false
-        }
-
-        _currentTrack.value = track
-        _isPlaying.value = true
     }
 
     fun pauseTrack() {
-        mediaPlayer?.pause()
+        mediaPlayerManager.pause()
         _isPlaying.value = false
     }
 
@@ -112,14 +165,12 @@ class LikedTracksViewModel @Inject constructor(
     }
 
     fun seekTo(position: Int) {
-        mediaPlayer?.seekTo(position)
+        mediaPlayerManager.seekTo(position)
         _currentPosition.value = position
     }
 
     fun updateCurrentPosition() {
-        mediaPlayer?.let {
-            _currentPosition.value = it.currentPosition
-        }
+        _currentPosition.value = mediaPlayerManager.getCurrentPosition()
     }
 
     fun isTrackPlaying(track: Track): Boolean {
@@ -130,14 +181,18 @@ class LikedTracksViewModel @Inject constructor(
         return likedTracksRepository.getTrackById(trackId)
     }
 
-    fun getMediaPlayer(): MediaPlayer? {
-        return mediaPlayer
+    fun getCurrentPosition(): Int {
+        return mediaPlayerManager.getCurrentPosition()
+    }
+
+    fun getDuration(): Int {
+        return mediaPlayerManager.getDuration()
     }
 
     override fun onCleared() {
         super.onCleared()
-        mediaPlayer?.release()
-        mediaPlayer = null
+//        mediaPlayer?.release()
+//        mediaPlayer = null
     }
 }
 

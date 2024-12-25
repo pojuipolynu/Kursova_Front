@@ -25,7 +25,7 @@ import com.example.musicapp.ui.theme.MusicAppTheme
 import com.example.musicapp.features.auth.domain.AuthViewModel
 import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
 import com.example.musicapp.features.main.likedtracks.presentation.FavouriteScreen
-import com.example.musicapp.features.main.likedtracks.presentation.TrackPlayerScreen
+import com.example.musicapp.features.main.TrackPlayerScreen
 import com.example.musicapp.features.main.profile.presentation.ProfileScreen
 import com.example.musicapp.features.main.search.presentation.SearchScreen
 import dagger.hilt.android.AndroidEntryPoint
@@ -108,14 +108,14 @@ fun NavGraphBuilder.mainGraph(navController: NavHostController, authViewModel: A
         composable("profile") { ProfileScreen() }
         composable("search") { SearchScreen(
             onTrackClick = { trackId ->
-                Log.d("FavouriteScreen", "Track ID: $trackId")
+                Log.d("MainScreen", "Track ID: $trackId")
                 navController.navigate("trackDetails/$trackId")
             }
         ) }
         composable("favourite") {
             FavouriteScreen(
                 onTrackClick = { trackId ->
-                    Log.d("FavouriteScreen", "Track ID: $trackId")
+                    Log.d("MainScreen", "Track ID: $trackId")
                     navController.navigate("trackDetails/$trackId")
                 }
             )

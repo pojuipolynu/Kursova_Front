@@ -31,6 +31,7 @@ import com.example.musicapp.features.main.likedtracks.data.Track
 import com.example.musicapp.ui.theme.White80
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.delay
+import com.example.musicapp.features.main.BottomTrackBar
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,46 +59,46 @@ fun FavouriteScreen(
         ) {
             HeaderComponent(text = "Ваша медіатека")
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = "",
-                onValueChange = {},
-                placeholder = {
-                    Text(
-                        text = "Пошук",
-                        color = White80,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.DarkGray, RoundedCornerShape(4.dp)),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    cursorColor = Color.White,
-                    unfocusedTextColor = White80,
-                    unfocusedPrefixColor = White80,
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent
-                ),
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search Icon",
-                        tint = White80
-                    )
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                ActionButton(text = "Відтворити", icon = Icons.Default.PlayArrow)
-                ActionButton(text = "Тасувати", icon = Icons.Default.PlayArrow)
-            }
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            OutlinedTextField(
+//                value = "",
+//                onValueChange = {},
+//                placeholder = {
+//                    Text(
+//                        text = "Пошук",
+//                        color = White80,
+//                        style = MaterialTheme.typography.bodySmall
+//                    )
+//                },
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .background(Color.DarkGray, RoundedCornerShape(4.dp)),
+//                colors = TextFieldDefaults.outlinedTextFieldColors(
+//                    cursorColor = Color.White,
+//                    unfocusedTextColor = White80,
+//                    unfocusedPrefixColor = White80,
+//                    focusedBorderColor = Color.Transparent,
+//                    unfocusedBorderColor = Color.Transparent
+//                ),
+//                leadingIcon = {
+//                    Icon(
+//                        imageVector = Icons.Default.Search,
+//                        contentDescription = "Search Icon",
+//                        tint = White80
+//                    )
+//                }
+//            )
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            Row(
+//                modifier = Modifier.fillMaxWidth(),
+//                horizontalArrangement = Arrangement.SpaceEvenly
+//            ) {
+//                ActionButton(text = "Відтворити", icon = Icons.Default.PlayArrow)
+//                ActionButton(text = "Тасувати", icon = Icons.Default.PlayArrow)
+//            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -155,56 +156,6 @@ fun ActionButton(text: String, icon: ImageVector) {
 }
 
 @Composable
-fun BottomTrackBar(
-    track: Track,
-    isPlaying: Boolean,
-    onPlayClick: () -> Unit,
-    onTrackClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.DarkGray)
-            .padding(16.dp)
-            .clickable { onTrackClick() },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Image(
-            painter = rememberAsyncImagePainter(model = track.imageUrl),
-            contentDescription = "Track Image",
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(8.dp)),
-            contentScale = ContentScale.Crop
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = track.title,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-            Text(
-                text = track.artist,
-                color = Color.Gray,
-                fontSize = 14.sp
-            )
-        }
-        IconButton(onClick = onPlayClick) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Default.PlayArrow else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) "Pause Icon" else "Play Icon",
-                tint = Color.White
-            )
-        }
-    }
-}
-
-@Composable
 fun TrackRow(
     track: Track,
     isLiked: Boolean,
@@ -253,57 +204,57 @@ fun TrackRow(
         }
     }
 }
-
-@Composable
-fun TrackPlayerScreen(
-    track: Track,
-    likedTracksViewModel: LikedTracksViewModel = hiltViewModel()
-) {
-    val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
-    val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
-    val currentPosition by likedTracksViewModel.currentPosition.collectAsState()
-
-    LaunchedEffect(currentTrack) {
-        while (isActive) { // Перевіряємо, чи не завершено LaunchedEffect
-            likedTracksViewModel.updateCurrentPosition()
-            delay(1000) // Оновлюємо кожну секунду
-        }
-    }
-
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(16.dp))
-        Image(
-            painter = rememberAsyncImagePainter(model = track.imageUrl),
-            contentDescription = "Track Image",
-            modifier = Modifier.size(200.dp),
-            contentScale = ContentScale.Crop
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = track.title,
-            fontWeight = FontWeight.Bold,
-            fontSize = 24.sp
-        )
-        Text(
-            text = track.artist,
-            fontSize = 18.sp,
-            color = Color.Gray
-        )
-        Slider(
-            value = currentPosition.toFloat(),
-            onValueChange = { newPosition ->
-                likedTracksViewModel.seekTo(newPosition.toInt())
-            },
-            valueRange = 0f..(likedTracksViewModel.getMediaPlayer()?.duration?.toFloat() ?: 1f)
-        )
-        Button(onClick = {
-            likedTracksViewModel.togglePlayPause()
-        }) {
-            Text(if (isPlaying) "Pause" else "Play")
-        }
-    }
-}
+//
+//@Composable
+//fun TrackPlayerScreen(
+//    track: Track,
+//    likedTracksViewModel: LikedTracksViewModel = hiltViewModel()
+//) {
+//    val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
+//    val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
+//    val currentPosition by likedTracksViewModel.currentPosition.collectAsState()
+//
+//    LaunchedEffect(currentTrack) {
+//        while (isActive) { // Перевіряємо, чи не завершено LaunchedEffect
+//            likedTracksViewModel.updateCurrentPosition()
+//            delay(1000) // Оновлюємо кожну секунду
+//        }
+//    }
+//
+//    Column(
+//        modifier = Modifier.fillMaxSize(),
+//        horizontalAlignment = Alignment.CenterHorizontally
+//    ) {
+//        Spacer(modifier = Modifier.height(16.dp))
+//        Image(
+//            painter = rememberAsyncImagePainter(model = track.imageUrl),
+//            contentDescription = "Track Image",
+//            modifier = Modifier.size(200.dp),
+//            contentScale = ContentScale.Crop
+//        )
+//        Spacer(modifier = Modifier.height(16.dp))
+//        Text(
+//            text = track.title,
+//            fontWeight = FontWeight.Bold,
+//            fontSize = 24.sp
+//        )
+//        Text(
+//            text = track.artist,
+//            fontSize = 18.sp,
+//            color = Color.Gray
+//        )
+//        Slider(
+//            value = currentPosition.toFloat(),
+//            onValueChange = { newPosition ->
+//                likedTracksViewModel.seekTo(newPosition.toInt())
+//            },
+//            valueRange = 0f..(likedTracksViewModel.getMediaPlayer()?.duration?.toFloat() ?: 1f)
+//        )
+//        Button(onClick = {
+//            likedTracksViewModel.togglePlayPause()
+//        }) {
+//            Text(if (isPlaying) "Pause" else "Play")
+//        }
+//    }
+//}
 

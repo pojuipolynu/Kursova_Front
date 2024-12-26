@@ -151,6 +151,7 @@ fun MainAppScreen(
         ) {
             composable(BottomNavItem.Search.route) {
                 SearchScreen(
+                    userId = "1",
                     onTrackClick = { trackId ->
                         Log.d("SearchScreen", "Track ID: $trackId")
                         bottomNavController.navigate("trackDetails/$trackId")
@@ -159,6 +160,7 @@ fun MainAppScreen(
             }
             composable(BottomNavItem.Favourite.route) {
                 FavouriteScreen(
+                    userId = "1",
                     onTrackClick = { trackId ->
                         Log.d("FavouriteScreen", "Track ID: $trackId")
                         bottomNavController.navigate("trackDetails/$trackId")
@@ -169,12 +171,13 @@ fun MainAppScreen(
                 ProfileScreen()
             }
 
+
             composable(
                 "trackDetails/{trackId}",
                 arguments = listOf(navArgument("trackId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val trackId = backStackEntry.arguments?.getString("trackId")
-                val track = likedTracksViewModel.getTrackById(trackId ?: "")
+                val track = likedTracksViewModel.getTrackByIdSync(trackId ?: "")
                 if (track != null) {
                     TrackPlayerScreen(track = track)
                 } else {
@@ -228,7 +231,7 @@ fun BottomTrackBar(
             )
             Text(
                 text = track.artist,
-                color = Color.Gray,
+                color = Color.White,
                 fontSize = 14.sp
             )
         }
@@ -296,7 +299,6 @@ fun TrackPlayerScreen(
 
                 valueRange = 0f..(likedTracksViewModel.getDuration().toFloat()),
                 colors = SliderDefaults.colors(Color.Red, Color.Red)
-//            valueRange = 0f..(likedTracksViewModel.getMediaPlayer()?.duration?.toFloat() ?: 1f)
             )
             Button(
                 modifier = Modifier.height(70.dp).width(70.dp),

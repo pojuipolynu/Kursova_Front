@@ -32,20 +32,27 @@ import com.example.musicapp.ui.theme.White80
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.delay
 import com.example.musicapp.features.main.BottomTrackBar
+import com.example.musicapp.features.main.search.presentation.TrackRow
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouriteScreen(
     likedTracksViewModel: LikedTracksViewModel = hiltViewModel(),
+    userId: String,
     onTrackClick: (String) -> Unit
 ) {
     val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
     val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
     val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
+    val searchQuery by likedTracksViewModel.searchQuery.collectAsState()
+    val filteredTracks by likedTracksViewModel.filteredTracks.collectAsState()
+
+//    val favouriteTracks by likedTracksViewModel.favouriteTracks.collectAsState()
 
     LaunchedEffect(Unit) {
-        likedTracksViewModel.loadLikedTracks()
+        likedTracksViewModel.loadFavourites(userId)
+//        likedTracksViewModel.loadLikedTracks()
     }
 
     Box(
@@ -59,46 +66,50 @@ fun FavouriteScreen(
         ) {
             HeaderComponent(text = "Ваша медіатека")
 
-//            Spacer(modifier = Modifier.height(16.dp))
-//
-//            OutlinedTextField(
-//                value = "",
-//                onValueChange = {},
-//                placeholder = {
-//                    Text(
-//                        text = "Пошук",
-//                        color = White80,
-//                        style = MaterialTheme.typography.bodySmall
-//                    )
-//                },
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .background(Color.DarkGray, RoundedCornerShape(4.dp)),
-//                colors = TextFieldDefaults.outlinedTextFieldColors(
-//                    cursorColor = Color.White,
-//                    unfocusedTextColor = White80,
-//                    unfocusedPrefixColor = White80,
-//                    focusedBorderColor = Color.Transparent,
-//                    unfocusedBorderColor = Color.Transparent
-//                ),
-//                leadingIcon = {
-//                    Icon(
-//                        imageVector = Icons.Default.Search,
-//                        contentDescription = "Search Icon",
-//                        tint = White80
-//                    )
-//                }
-//            )
-//
-//            Spacer(modifier = Modifier.height(16.dp))
-//
-//            Row(
-//                modifier = Modifier.fillMaxWidth(),
-//                horizontalArrangement = Arrangement.SpaceEvenly
-//            ) {
-//                ActionButton(text = "Відтворити", icon = Icons.Default.PlayArrow)
-//                ActionButton(text = "Тасувати", icon = Icons.Default.PlayArrow)
-//            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = {
+                        query ->
+                    likedTracksViewModel.updateSearchQuery(query)
+                    likedTracksViewModel.searchTracks(query)
+                },
+                placeholder = {
+                    Text(
+                        text = "Пошук",
+                        color = White80,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.DarkGray, RoundedCornerShape(4.dp)),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    cursorColor = Color.White,
+                    unfocusedTextColor = White80,
+                    unfocusedPrefixColor = White80,
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent
+                ),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search Icon",
+                        tint = White80
+                    )
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                ActionButton(text = "Відтворити", icon = Icons.Default.PlayArrow)
+                ActionButton(text = "Тасувати", icon = Icons.Default.PlayArrow)
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -108,8 +119,9 @@ fun FavouriteScreen(
                 items(likedTracksState.tracks) { track ->
                     TrackRow(
                         track = track,
-                        isLiked = likedTracksState.likedTrackIds.contains(track.id),
-                        onLikeClick = { likedTracksViewModel.toggleLike(track.id) },
+                        isLiked = likedTracksState.likedTrackIds.contains(track.id.toString()),
+                        onLikeClick = { likedTracksViewModel.toggleLike(userId, track.id) },
+//                        onLikeClick = { likedTracksViewModel.toggleLike(track.id) },
                         onTrackClick = {
                             likedTracksViewModel.playTrack(track)
                             onTrackClick(track.id)

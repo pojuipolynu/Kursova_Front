@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -29,89 +30,22 @@ import com.example.musicapp.features.main.likedtracks.data.Track
 import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
 import com.example.musicapp.ui.theme.White80
 
-//@Composable
-//fun SearchScreen(
-//    likedTracksViewModel: LikedTracksViewModel = hiltViewModel(),
-//    onTrackClick: (String) -> Unit
-//) {
-//    val searchQuery by likedTracksViewModel.searchQuery.collectAsState()
-//    val filteredTracks by likedTracksViewModel.filteredTracks.collectAsState()
-//    val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
-//    val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
-//
-//    Box(
-//        modifier = Modifier
-//            .fillMaxSize()
-//            .background(Color.Black)
-//            .padding(horizontal = 16.dp)
-//    ) {
-//        Column(
-//            modifier = Modifier.fillMaxSize()
-//        ) {
-//            OutlinedTextField(
-//                value = searchQuery,
-//                onValueChange = { likedTracksViewModel.updateSearchQuery(it) },
-//                placeholder = {
-//                    Text(
-//                        text = "Пошук",
-//                        color = White80,
-//                        style = MaterialTheme.typography.bodySmall
-//                    )
-//                },
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .background(Color.DarkGray, RoundedCornerShape(4.dp)),
-//                leadingIcon = {
-//                    Icon(
-//                        imageVector = Icons.Default.Search,
-//                        contentDescription = "Search Icon",
-//                        tint = White80,
-//                        modifier = Modifier.clickable { likedTracksViewModel.filterTracks() }
-//                    )
-//                }
-//            )
-//
-//            Spacer(modifier = Modifier.height(16.dp))
-//
-//            LazyColumn(
-//                modifier = Modifier.weight(1f)
-//            ) {
-//                items(filteredTracks) { track ->
-//                    TrackRow(
-//                        track = track,
-//                        isLiked = likedTracksViewModel.likedTracksState.value.likedTrackIds.contains(track.id),
-//                        onLikeClick = { likedTracksViewModel.toggleLike(track.id) },
-//                        onTrackClick = {
-//                            likedTracksViewModel.playTrack(track)
-//                            onTrackClick(track.id)
-//                        }
-//                    )
-//                }
-//            }
-//        }
-//
-//        currentTrack?.let { track ->
-//            BottomTrackBar(
-//                track = track,
-//                isPlaying = isPlaying,
-//                onPlayClick = { likedTracksViewModel.togglePlayPause() },
-//                onTrackClick = { onTrackClick(track.id) }
-//            )
-//        }
-//    }
-//}
-
 
 @Composable
 fun SearchScreen(
     likedTracksViewModel: LikedTracksViewModel = hiltViewModel(),
-    onTrackClick: (String) -> Unit
+    onTrackClick: (String) -> Unit,
+    userId: String,
 ) {
     val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
     val searchQuery by likedTracksViewModel.searchQuery.collectAsState()
     val filteredTracks by likedTracksViewModel.filteredTracks.collectAsState()
     val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
     val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
+
+    LaunchedEffect(Unit) {
+        likedTracksViewModel.loadTracks()
+    }
 
     Box(
         modifier = Modifier
@@ -128,7 +62,9 @@ fun SearchScreen(
 
         OutlinedTextField(
             value = searchQuery,
-            onValueChange = { likedTracksViewModel.updateSearchQuery(it) },
+            onValueChange = { query ->
+                likedTracksViewModel.updateSearchQuery(query)
+                likedTracksViewModel.searchTracks(query) },
             placeholder = {
                 Text(
                     text = "Пошук",
@@ -164,8 +100,9 @@ fun SearchScreen(
             items(filteredTracks) { track ->
                 TrackRow(
                     track = track,
-                    isLiked = likedTracksState.likedTrackIds.contains(track.id),
-                    onLikeClick = { likedTracksViewModel.toggleLike(track.id) },
+                    isLiked = likedTracksState.likedTrackIds.contains(track.id.toString()),
+                    onLikeClick = { likedTracksViewModel.toggleLike(userId, track.id) },
+//                    onLikeClick = { likedTracksViewModel.toggleLike(track.id) },
                     onTrackClick = {
                         likedTracksViewModel.playTrack(track)
                         onTrackClick(track.id)

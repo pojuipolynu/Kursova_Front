@@ -26,11 +26,12 @@ object NetworkModule {
             .build()
     }
 
+
     @Provides
     @Singleton
     fun provideRetrofit(client: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://api.example.com/")  // Заміна на вашу базову URL-адресу
+            .baseUrl("https://kurs-fcnj.onrender.com/")  // Заміна на вашу базову URL-адресу
             .addConverterFactory(GsonConverterFactory.create())
             .client(client)
             .build()

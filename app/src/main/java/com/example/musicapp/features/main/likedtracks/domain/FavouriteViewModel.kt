@@ -1,5 +1,6 @@
 package com.example.musicapp.features.main.likedtracks.domain
 
+//import android.media.MediaPlayer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musicapp.features.main.likedtracks.data.LikedTracksRepository
@@ -9,46 +10,272 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.media.MediaPlayer
+import javax.inject.Singleton
+import kotlinx.coroutines.runBlocking
+import android.util.Log
+
+
+@Singleton
+class MediaPlayerManager @Inject constructor() {
+    private var mediaPlayer: MediaPlayer? = null
+
+    fun play(trackUrl: String, onCompletion: () -> Unit) {
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer().apply {
+                setOnCompletionListener {
+                    onCompletion()
+                }
+            }
+        } else {
+            mediaPlayer?.reset()
+        }
+
+        mediaPlayer?.apply {
+            setDataSource(trackUrl)
+            prepare()
+            start()
+        }
+    }
+
+    fun pause() {
+        mediaPlayer?.pause()
+    }
+
+    fun resume() {
+        mediaPlayer?.start()
+    }
+
+    fun stop() {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+    }
+
+    fun seekTo(position: Int) {
+        mediaPlayer?.seekTo(position)
+    }
+
+    fun getCurrentPosition(): Int {
+        return mediaPlayer?.currentPosition ?: 0
+    }
+
+    fun getDuration(): Int {
+        return mediaPlayer?.duration ?: 0
+    }
+}
+
 
 @HiltViewModel
 class LikedTracksViewModel @Inject constructor(
-    private val likedTracksRepository: LikedTracksRepository
+    private val likedTracksRepository: LikedTracksRepository,
+    private val mediaPlayerManager: MediaPlayerManager
 ) : ViewModel() {
 
     private val _likedTracksState = MutableStateFlow(LikedTracksState(emptyList(), emptySet()))
     val likedTracksState: StateFlow<LikedTracksState> = _likedTracksState
 
-    private var currentTrack: Track? = null
-    private var isPlaying = false
+    private val _currentTrack = MutableStateFlow<Track?>(null)
+    val currentTrack: StateFlow<Track?> = _currentTrack
 
-    fun loadLikedTracks() {
+    private val _isPlaying = MutableStateFlow(false)
+    val isPlaying: StateFlow<Boolean> = _isPlaying
+
+    private var _currentPosition = MutableStateFlow(0)
+    val currentPosition: StateFlow<Int> = _currentPosition
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    private val _filteredTracks = MutableStateFlow<List<Track>>(emptyList())
+    val filteredTracks: StateFlow<List<Track>> = _filteredTracks
+
+    private val _searchResults = MutableStateFlow<List<Track>>(emptyList())
+    val searchResults: StateFlow<List<Track>> = _searchResults
+
+    init {
+        loadTracks()
+    }
+
+    //Get tracks
+
+    fun loadTracks() {
         viewModelScope.launch {
             val tracks = likedTracksRepository.getTracks()
-            val likedIds = likedTracksRepository.getLikedTrackIds()
-            _likedTracksState.value = LikedTracksState(tracks, likedIds)
+            _filteredTracks.value = tracks
         }
     }
 
-    fun toggleLike(trackId: String) {
-        viewModelScope.launch {
-            likedTracksRepository.toggleLike(trackId)
-            loadLikedTracks()
+    suspend fun getTrackById(trackId: String): Track? {
+        return likedTracksRepository.getTrackById(trackId)
+    }
+
+    fun getTrackByIdSync(trackId: String): Track? {
+        return runBlocking {
+            getTrackById(trackId)
         }
     }
+
+    //search tracks
+
+    fun searchTracks(query: String) {
+        viewModelScope.launch {
+            try {
+                val searchResults = likedTracksRepository.searchTracks(query)
+                _searchResults.value = searchResults // Оновіть стан пошуку
+            } catch (e: Exception) {
+                Log.e("LikedTracksViewModel", "Error searching tracks: ${e.message}")
+            }
+        }
+    }
+
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+        filterTracks()
+    }
+
+    fun filterTracks() {
+        viewModelScope.launch {
+            val allTracks = likedTracksRepository.getTracks()
+            _filteredTracks.value = allTracks.filter {
+                it.title.contains(_searchQuery.value, ignoreCase = true) ||
+                        it.artist.contains(_searchQuery.value, ignoreCase = true)
+            }
+        }
+    }
+
+
+    fun loadFavourites(userId: String) {
+        viewModelScope.launch {
+            try {
+                val favourites = likedTracksRepository.getFavourites(userId)
+                _likedTracksState.value = LikedTracksState(
+                    tracks = favourites,
+                    likedTrackIds = favourites.map { it.id.toString() }.toSet()
+                )
+            } catch (e: Exception) {
+                Log.e("LikedTracksViewModel", "Error loading favourites: ${e.message}")
+            }
+        }
+    }
+
+
+    fun toggleLike(userId: String, trackId: String) {
+        viewModelScope.launch {
+            try {
+                val isLiked = _likedTracksState.value.likedTrackIds.contains(trackId)
+                Log.d("toggleLike", "isLiked: $isLiked, userId: $userId, trackId: $trackId")
+                if (isLiked) {
+                    Log.d("toggleLike", "Deleting favourite...")
+                    likedTracksRepository.deleteFavourite(userId, trackId)
+                } else {
+                    Log.d("toggleLike", "Adding favourite...")
+                    likedTracksRepository.addFavourite(userId, trackId)
+                }
+                loadFavourites(userId) // Оновлюємо список після змін
+            } catch (e: Exception) {
+                Log.e("LikedTracksViewModel", "Error toggling like: ${e.message}")
+            }
+        }
+    }
+
+    fun loadLikedTrackIds(userId: String) {
+        viewModelScope.launch {
+            try {
+                val likedIds = likedTracksRepository.getLikedTrackIds(userId)
+                _likedTracksState.value = _likedTracksState.value.copy(
+                    likedTrackIds = likedIds
+                )
+            } catch (e: Exception) {
+                Log.e("LikedTracksViewModel", "Error loading liked track IDs: ${e.message}")
+            }
+        }
+    }
+
+
+//    fun toggleLike(trackId: String) {
+//        viewModelScope.launch {
+//            likedTracksRepository.toggleLike(trackId)
+//
+//            // Оновлення списку треків у стані
+//            val updatedLikedIds = likedTracksRepository.getLikedTrackIds().toSet()
+//            val updatedTracks = _likedTracksState.value.tracks.filter { updatedLikedIds.contains(it.id) }
+//
+//            _likedTracksState.value = _likedTracksState.value.copy(
+//                tracks = updatedTracks,
+//                likedTrackIds = updatedLikedIds
+//            )
+//        }
+//    }
+//
+//    fun loadLikedTracks() {
+//        viewModelScope.launch {
+//            val tracks = likedTracksRepository.getTracks()
+//            val likedIds = likedTracksRepository.getLikedTrackIds()
+//            _likedTracksState.value = LikedTracksState(tracks, likedIds)
+//        }
+//    }
+
+
+    //work with tracks
 
     fun playTrack(track: Track) {
-        currentTrack = track
-        isPlaying = true
-        // Notify UI about playing state if needed
+        if (_currentTrack.value?.id != track.id) {
+            mediaPlayerManager.play(track.fileUrl) {
+                _isPlaying.value = false
+            }
+            _currentTrack.value = track
+            _isPlaying.value = true
+        } else if (!_isPlaying.value) {
+            mediaPlayerManager.resume()
+            _isPlaying.value = true
+        }
+    }
+
+    fun pauseTrack() {
+        mediaPlayerManager.pause()
+        _isPlaying.value = false
+    }
+
+    fun togglePlayPause() {
+        if (_isPlaying.value) {
+            pauseTrack()
+        } else {
+            _currentTrack.value?.let { playTrack(it) }
+        }
+    }
+
+    fun seekTo(position: Int) {
+        mediaPlayerManager.seekTo(position)
+        _currentPosition.value = position
+    }
+
+    fun updateCurrentPosition() {
+        _currentPosition.value = mediaPlayerManager.getCurrentPosition()
+    }
+
+    fun isTrackPlaying(track: Track): Boolean {
+        return _currentTrack.value?.id == track.id && _isPlaying.value
+    }
+
+    fun getCurrentPosition(): Int {
+        return mediaPlayerManager.getCurrentPosition()
+    }
+
+    fun getDuration(): Int {
+        return mediaPlayerManager.getDuration()
     }
 
 
-    fun getTrackById(trackId: String): Track? {
-        return likedTracksRepository.getTrackById(trackId)
+    override fun onCleared() {
+        super.onCleared()
+//        mediaPlayer?.release()
+//        mediaPlayer = null
     }
 }
 
 data class LikedTracksState(
-    val tracks: List<Track>,
-    val likedTrackIds: Set<String>
+    val tracks: List<Track> = emptyList(),
+    val likedTrackIds: Set<String> = emptySet()
 )

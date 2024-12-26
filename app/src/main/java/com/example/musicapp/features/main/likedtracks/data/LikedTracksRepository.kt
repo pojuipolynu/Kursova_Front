@@ -12,13 +12,31 @@ import com.example.musicapp.api.FavouritesResponse
 class LikedTracksRepository @Inject constructor(
     private val apiService: ApiService
 ) {
-//    private val tracks = listOf(
-//        Track("1", "https://f005.backblazeb2.com/file/music-app-files/covers/SheWantsRevenge.st.jpg", "Sister", "She wants revenge", "4:19", "https://f005.backblazeb2.com/file/music-app-files/music/She+Wants+Revenge-Sister.mp3"),
-//        Track("2", "https://f005.backblazeb2.com/file/music-app-files/covers/artworks-bQyGQjPCgQ4FIIAo-WbjuKg-t500x500.jpeg", "Billie Eilish", "My strange addiction", "2:59", "https://f005.backblazeb2.com/file/music-app-files/music/billie-eilish_-_my-strange-addiction.mp3"),
-//        Track("3", "https://f005.backblazeb2.com/file/music-app-files/covers/500x500.jpg", "Your love", "She wants revenge", "3:36", "https://f005.backblazeb2.com/file/music-app-files/music/She+Wants+Revenge-Your+Love.mp3"),
-//        Track("4", "https://f005.backblazeb2.com/file/music-app-files/covers/1_-JYPeNvOdIO52Z9TuV0Wzg.jpg", "The Hills", "The Weekend", "4:02", "https://f005.backblazeb2.com/file/music-app-files/music/The+Weeknd-The+Hills.mp3"),
-//        Track("5", "https://f005.backblazeb2.com/file/music-app-files/covers/1_-JYPeNvOdIO52Z9TuV0Wzg.jpg", "The Hills", "The Weekend", "4:02", "https://f005.backblazeb2.com/file/music-app-files/music/The+Weeknd-The+Hills.mp3")
-//    )
+
+//    {
+//        "title": "False Alarm",
+//        "artist": "The Weeknd",
+//        "fileUrl": "https://f003.backblazeb2.com/file/music-app-file/music/The+Weeknd-False+Alarm.mp3",
+//        "imageUrl": "https://f003.backblazeb2.com/file/music-app-file/covers/alarm.jpg",
+//        "duration": "3:41"
+//    }
+//    {
+//        "title": "The Show Must Go On",
+//        "artist": "Queen",
+//        "fileUrl": "https://f003.backblazeb2.com/file/music-app-file/music/The+Show+Must+Go+On+(Remastered+2011)+-+Queen.m4a",
+//        "imageUrl": "https://f003.backblazeb2.com/file/music-app-file/covers/Show.jpg",
+//        "duration": "4:08"
+//    }
+//    {
+//        "title": "Diet Mountain Dew",
+//        "artist": "Lana Del Rey",
+//        "fileUrl": "https://f003.backblazeb2.com/file/music-app-file/music/Lana+Del+Rey-Diet+Mountain+Dew.mp3",
+//        "imageUrl": "https://f003.backblazeb2.com/file/music-app-file/covers/Diet.jpg",
+//        "duration": "3:43"
+//    }
+
+
+
     private val likedTrackIds = mutableSetOf<String>()
 
     // Отримати всі треки через API
@@ -42,14 +60,6 @@ class LikedTracksRepository @Inject constructor(
             null
         }
     }
-
-//    suspend fun toggleLike(trackId: String) {
-//        if (likedTrackIds.contains(trackId)) {
-//            likedTrackIds.remove(trackId)
-//        } else {
-//            likedTrackIds.add(trackId)
-//        }
-//    }
 
     suspend fun searchTracks(query: String): List<Track> {
         return try {

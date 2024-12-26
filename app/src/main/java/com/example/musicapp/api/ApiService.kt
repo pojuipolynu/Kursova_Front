@@ -51,16 +51,6 @@ data class SearchResponse(
 )
 
 
-//data class Track(
-//    val id: String,
-//    val imageUrl: String,
-//    val title: String,
-//    val artist: String,
-//    val duration: String,
-//    val fileUrl: String
-//)
-
-
 interface ApiService {
     @GET("posts/1") // Запит до одного поста з JSONPlaceholder
     suspend fun getPost(): Post

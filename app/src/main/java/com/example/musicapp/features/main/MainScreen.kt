@@ -255,6 +255,8 @@ fun TrackPlayerScreen(
     val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
     val currentPosition by likedTracksViewModel.currentPosition.collectAsState()
 
+
+
     LaunchedEffect(currentTrack) {
         while (isActive) { // Перевіряємо, чи не завершено LaunchedEffect
             likedTracksViewModel.updateCurrentPosition()

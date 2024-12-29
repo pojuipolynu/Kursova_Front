@@ -101,20 +101,41 @@ fun LoginScreen(
                     }
                 }
                 is AuthResult.Loading -> {
-                    Text("Loading...", color = White80)
+                    Text("Зачекайте...", color = White80)
                 }
                 is AuthResult.Success -> {
                     onLoginSuccess()
                 }
                 is AuthResult.Error -> {
-                    Column {
-                        Button(onClick = { authViewModel.signInWithGoogle(activity) }) {
-                            Text("Retry Sign in")
+                    Button(
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Red60,
+                            contentColor = Red60
+                        ),
+                        shape = RoundedCornerShape(4.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { authViewModel.signInWithGoogle(activity) }
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .background(color = Red60),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Спробувати ще раз",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = White80,
+                                fontSize = 20.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Image(
+                                painter = painterResource(R.drawable.play_icon),
+                                contentDescription = null,
+                                Modifier.size(18.dp)
+                            )
                         }
-                        Text(
-                            text = "Error: ${result.message}",
-                            color = Color.Red
-                        )
                     }
                 }
             }

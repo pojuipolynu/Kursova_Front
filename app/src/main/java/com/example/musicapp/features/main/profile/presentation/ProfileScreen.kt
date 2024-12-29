@@ -17,11 +17,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.musicapp.components.HeaderComponent
+import com.example.musicapp.features.main.BottomTrackBar
 import com.example.musicapp.features.main.profile.data.ProfileResult
 import com.example.musicapp.features.main.profile.domain.ProfileViewModel
 import com.example.musicapp.ui.theme.Black80
 import com.example.musicapp.ui.theme.Black90
 import com.example.musicapp.ui.theme.White80
+import com.example.musicapp.features.main.BottomTrackBar
+import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
+
 
 @Composable
 fun ProfileScreen(
@@ -32,6 +36,8 @@ fun ProfileScreen(
     }
 
     val profileState by profileViewModel.profileState.collectAsState()
+//    val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
+//    val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
 
     Column(
         modifier = Modifier
@@ -104,6 +110,20 @@ fun ProfileScreen(
                 )
             }
         }
+
+//        currentTrack?.let { track ->
+//            BottomTrackBar(
+//                track = track,
+//                isPlaying = isPlaying,
+//                onPlayClick = {
+//                    likedTracksViewModel.togglePlayPause()
+//                },
+//                onTrackClick = {
+//                    onTrackClick(track.id)
+//                }
+//            )
+//        }
+
     }
 }
 

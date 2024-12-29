@@ -1,6 +1,5 @@
 package com.example.musicapp.features.main.likedtracks.domain
 
-//import android.media.MediaPlayer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musicapp.features.main.likedtracks.data.LikedTracksRepository
@@ -16,21 +15,15 @@ import kotlinx.coroutines.runBlocking
 import android.util.Log
 
 
-enum class TrackListMode {
-    FAVORITES,
-    SEARCH
-}
-
 @Singleton
 class MediaPlayerManager @Inject constructor() {
     private var mediaPlayer: MediaPlayer? = null
 
-    // Play track and notify when it's complete
     fun play(trackUrl: String, onCompletion: () -> Unit) {
         if (mediaPlayer == null) {
             mediaPlayer = MediaPlayer().apply {
                 setOnCompletionListener {
-                    onCompletion()  // Notify that the track has finished playing
+                    onCompletion()
                 }
             }
         } else {
@@ -99,17 +92,34 @@ class LikedTracksViewModel @Inject constructor(
     private val _searchResults = MutableStateFlow<List<Track>>(emptyList())
     val searchResults: StateFlow<List<Track>> = _searchResults
 
-    private var currentMode: String? = null
+    private val _currentSourcePage = MutableStateFlow<String?>(null)
+    val currentSourcePage: StateFlow<String?> = _currentSourcePage
 
-    fun setCurrentMode(mode: String) {
-        currentMode = mode
+    private var currentLikedTrackIndex: Int? = null
+
+    fun setCurrentSourcePage(page: String) {
+        _currentSourcePage.value = page
     }
+
+
+    fun updateCurrentLikedTrackIndex(trackId:String) {
+        currentLikedTrackIndex = _likedTracksState.value.tracks.indexOfFirst {
+            it.id == trackId
+        }
+        if (currentLikedTrackIndex == -1) {
+            Log.e("LikedTracksViewModel", "Track not found in liked tracks.")
+            Log.e("LikedTracksViewModel", "${_likedTracksState.value.tracks}")
+            currentLikedTrackIndex = null
+        }
+    }
+
+
+
 
     init {
         loadTracks()
+        loadFavourites(userId="1")
     }
-
-    //Get tracks
 
     fun loadTracks() {
         viewModelScope.launch {
@@ -184,7 +194,7 @@ class LikedTracksViewModel @Inject constructor(
                     Log.d("toggleLike", "Adding favourite...")
                     likedTracksRepository.addFavourite(userId, trackId)
                 }
-                loadFavourites(userId) // Оновлюємо список після змін
+                loadFavourites(userId)
             } catch (e: Exception) {
                 Log.e("LikedTracksViewModel", "Error toggling like: ${e.message}")
             }
@@ -205,60 +215,116 @@ class LikedTracksViewModel @Inject constructor(
     }
 
 
-    fun playTrack(track: Track) {
-        if (_currentTrack.value?.id != track.id) {
-            mediaPlayerManager.stop()
-            mediaPlayerManager.play(track.fileUrl) {
-               playNextTrack()
+    fun playTrack(track: Track, sourcePage: String) {
+        viewModelScope.launch {
+            if (_currentTrack.value?.id != track.id) {
+                mediaPlayerManager.stop()
+                if (sourcePage == "Favourite") {
+                    updateCurrentLikedTrackIndex(track.id)
+                }
+                mediaPlayerManager.play(track.fileUrl) {
+                    playNextTrack()
+                }
+                _currentTrack.emit(track)
+                _isPlaying.emit(true)
+                _currentSourcePage.emit(sourcePage)
+
+            } else if (!_isPlaying.value) {
+                mediaPlayerManager.resume()
+                _isPlaying.emit(true)
             }
-            _currentTrack.value = track
-            _isPlaying.value = true
-        } else if (!_isPlaying.value) {
-            mediaPlayerManager.resume()
-            _isPlaying.value = true
         }
     }
 
-
-//    private fun playNextFavouriteTrack() {
-//        val currentIndex = _likedTracksState.value.tracks.indexOfFirst { it.id == _currentTrack.value?.id }
-//        if (currentIndex != -1 && currentIndex + 1 < _likedTracksState.value.tracks.size) {
-//            val nextTrack = _likedTracksState.value.tracks[currentIndex + 1]
-//            playTrack(nextTrack)
-//        } else {
-//            _isPlaying.value = false
-//            _currentTrack.value = null
-//        }
-//    }
-
+    private fun playNextFavouriteTrack() {
+        if (currentLikedTrackIndex != null) {
+            val nextIndex = currentLikedTrackIndex!! + 1
+            val tracks = _likedTracksState.value.tracks
+            if (nextIndex in tracks.indices) {
+                val nextTrack = tracks[nextIndex]
+                Log.d("LikedTracksViewModel", "Playing next favourite track: $nextTrack")
+                playTrack(nextTrack, "Favourite")
+            } else {
+                Log.d("LikedTracksViewModel", "End of favourite tracks. Stopping playback.")
+                _isPlaying.value = false
+                _currentTrack.value = null
+                mediaPlayerManager.pause()
+            }
+        } else {
+            Log.e("LikedTracksViewModel", "Current track index is null.")
+        }
+    }
 
     private fun playNextTrack() {
-        val currentIndex = _filteredTracks.value.indexOfFirst { it.id == _currentTrack.value?.id }
-        if (currentIndex != -1 && currentIndex + 1 < _filteredTracks.value.size) {
-            val nextTrack = _filteredTracks.value[currentIndex + 1]
-            playTrack(nextTrack)
-        } else {
-            _isPlaying.value = false
-            _currentTrack.value = null
+        when (_currentSourcePage.value) {
+            "Favourite" -> playNextFavouriteTrack()
+            else -> {
+                val currentIndex = _filteredTracks.value.indexOfFirst { it.id == _currentTrack.value?.id }
+                if (currentIndex != -1 && currentIndex + 1 < _filteredTracks.value.size) {
+                    val nextTrack = _filteredTracks.value[currentIndex + 1]
+                    playTrack(nextTrack, _currentSourcePage.value ?: "")
+                } else {
+                    _isPlaying.value = false
+                    _currentTrack.value = null
+                    mediaPlayerManager.pause()
+                }
+            }
         }
     }
 
-    fun pauseTrack() {
-        mediaPlayerManager.pause()
-        _isPlaying.value = false
-    }
 
 
-    fun togglePlayPause() {
+
+    fun togglePlayPause(sourcePage: String) {
         if (_isPlaying.value) {
             mediaPlayerManager.pause()
             _isPlaying.value = false
         } else {
             _currentTrack.value?.let { track ->
-                playTrack(track)
+                playTrack(track, sourcePage)
             }
         }
     }
+
+    private fun playPreviousFavouriteTrack() {
+        if (currentLikedTrackIndex != null) {
+            val previousIndex = currentLikedTrackIndex!! - 1
+            val tracks = _likedTracksState.value.tracks
+            if (previousIndex in tracks.indices) {
+                val previousTrack = tracks[previousIndex]
+                Log.d("LikedTracksViewModel", "Playing previous favourite track: $previousTrack")
+                playTrack(previousTrack, "Favourite")
+            } else {
+                Log.d("LikedTracksViewModel", "Start of favourite tracks.")
+            }
+        } else {
+            Log.e("LikedTracksViewModel", "Current track index is null.")
+        }
+    }
+
+    private fun playPreviousTrack() {
+        when (_currentSourcePage.value) {
+            "Favourite" -> playPreviousFavouriteTrack()
+            else -> {
+                val currentIndex = _filteredTracks.value.indexOfFirst { it.id == _currentTrack.value?.id }
+                if (currentIndex != -1 && currentIndex - 1 >= 0) {
+                    val previousTrack = _filteredTracks.value[currentIndex - 1]
+                    playTrack(previousTrack, _currentSourcePage.value ?: "")
+                } else {
+                    Log.d("LikedTracksViewModel", "No previous track available.")
+                }
+            }
+        }
+    }
+
+    fun skipToNextTrack() {
+        playNextTrack()
+    }
+
+    fun skipToPreviousTrack() {
+        playPreviousTrack()
+    }
+
 
 
     fun seekTo(position: Int) {
@@ -285,8 +351,6 @@ class LikedTracksViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-//        mediaPlayer?.release()
-//        mediaPlayer = null
     }
 }
 

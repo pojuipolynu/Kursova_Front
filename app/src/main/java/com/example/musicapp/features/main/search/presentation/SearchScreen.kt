@@ -29,7 +29,6 @@ import com.example.musicapp.features.main.BottomTrackBar
 import com.example.musicapp.features.main.likedtracks.data.Track
 import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
 import com.example.musicapp.ui.theme.White80
-import com.example.musicapp.features.main.likedtracks.domain.TrackListMode
 
 
 @Composable
@@ -41,13 +40,12 @@ fun SearchScreen(
     val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
     val searchQuery by likedTracksViewModel.searchQuery.collectAsState()
     val filteredTracks by likedTracksViewModel.filteredTracks.collectAsState()
-    val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
-    val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
 
 
     LaunchedEffect(Unit) {
         likedTracksViewModel.loadTracks()
         likedTracksViewModel.loadLikedTrackIds(userId)
+        likedTracksViewModel.setCurrentSourcePage("Search")
     }
 
     Box(
@@ -101,25 +99,15 @@ fun SearchScreen(
                         isLiked = isLiked,
                         onLikeClick = { likedTracksViewModel.toggleLike(userId, track.id) },
                         onTrackClick = {
-                            likedTracksViewModel.playTrack(track)
+                            likedTracksViewModel.playTrack(track, "Favourite")
                             onTrackClick(track.id)
                         }
+
                     )
                 }
             }
 
-            currentTrack?.let { track ->
-                BottomTrackBar(
-                    track = track,
-                    isPlaying = isPlaying,
-                    onPlayClick = {
-                        likedTracksViewModel.togglePlayPause()
-                    },
-                    onTrackClick = {
-                        onTrackClick(track.id)
-                    }
-                )
-            }
+
         }
     }
 }

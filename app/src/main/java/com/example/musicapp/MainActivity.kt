@@ -25,7 +25,6 @@ import com.example.musicapp.ui.theme.MusicAppTheme
 import com.example.musicapp.features.auth.domain.AuthViewModel
 import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
 import com.example.musicapp.features.main.likedtracks.presentation.FavouriteScreen
-import com.example.musicapp.features.main.TrackPlayerScreen
 import com.example.musicapp.features.main.profile.presentation.ProfileScreen
 import com.example.musicapp.features.main.search.presentation.SearchScreen
 import dagger.hilt.android.AndroidEntryPoint

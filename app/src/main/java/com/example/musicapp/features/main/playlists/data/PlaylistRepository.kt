@@ -1,9 +1,9 @@
 package com.example.musicapp.features.main.playlists.data
 
+import android.util.Log
 import com.example.musicapp.api.ApiService
 import com.example.musicapp.api.PlaylistResponse
 import com.example.musicapp.features.main.likedtracks.data.Track
-import com.example.musicapp.features.main.profile.data.Playlist
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,12 +18,14 @@ class PlaylistRepository @Inject constructor(
     private val _allTracks = MutableStateFlow<List<Track>>(emptyList())
     val allTracks: Flow<List<Track>> = _allTracks.asStateFlow()
 
-    fun getPlaylistName(userId: String, playlistId: String): String {
+    suspend fun getPlaylistName(userId: String, playlistId: String): String {
         return try {
-            val name = apiService.getPlaylistDetails(userId, playlistId).title
-            name ?: "Unknown Playlist"  // Provide a fallback name if it is null
+            Log.d("PlaylistRepository", "User ID: $userId, Playlist ID: $playlistId")
+            val name = apiService.getPlaylistDetails(userId, playlistId.toInt()).title
+            name ?: "Unknown Playlist"
         } catch (e: Exception) {
-            "Error loading playlist name"  // Return a fallback name in case of an error
+            Log.e("PlaylistRepository", "Error loading playlist name $e")
+            "Error loading playlist name $e"
         }
     }
 
@@ -35,16 +37,37 @@ class PlaylistRepository @Inject constructor(
         }
     }
 
-    suspend fun createPlaylist(userId: String, name: String): PlaylistResponse {
-        return apiService.createPlaylist(userId, name)
+    suspend fun createPlaylist(userId: String, name: String): PlaylistResponse? {
+        return try {
+            Log.d("PlaylistRepository", "Creating playlist for user: $userId with name: $name")
+            val request = CreatePlaylistRequest(title = name) // Формуємо тіло запиту
+            apiService.createPlaylist(userId, request)
+        } catch (e: Exception) {
+            Log.e("PlaylistRepository", "Error creating playlist: ${e.message}")
+            null
+        }
     }
 
-    suspend fun addTrackToPlaylist(playlistId: String, trackId: String) {
-        apiService.addTrackToPlaylist(playlistId, trackId)
+    suspend fun addTrackToPlaylist(playlistId: String, trackId: String): Boolean {
+        return try {
+            Log.d("PlaylistRepository", "Adding track $trackId to playlist $playlistId")
+            apiService.addTrackToPlaylist(playlistId.toInt(), trackId.toInt())
+            true
+        } catch (e: Exception) {
+            Log.e("PlaylistRepository", "Error adding track to playlist: ${e.message}")
+            false
+        }
     }
+
 
     suspend fun removeTrackFromPlaylist(playlistId: String, trackId: String) {
         apiService.removeTrackFromPlaylist(playlistId, trackId)
     }
 }
+
+
+data class CreatePlaylistRequest(
+    val title: String
+)
+
 

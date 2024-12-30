@@ -63,11 +63,18 @@ fun ViewPlaylistScreen(
     val playlistTracks by playlistViewModel.getPlaylistTracks(playlistId)
         .collectAsState(initial = emptyList())
     val allTracks by playlistViewModel.allTracks.collectAsState(initial = emptyList())
-    val playlistName =
-        authViewModel.getCurrentUserId()?.let { playlistViewModel.getPlaylistName(it, playlistId) }
+    val scope = rememberCoroutineScope()
+    val playlistName = remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        authViewModel.getCurrentUserId()?.let { userId ->
+            scope.launch {
+                playlistName.value = playlistViewModel.getPlaylistName(userId, playlistId)
+            }
+        }
+    }
 
     val editingMode = remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
     val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
 
@@ -85,9 +92,7 @@ fun ViewPlaylistScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            if (playlistName != null) {
-                HeaderComponent(text = playlistName)
-            }
+            HeaderComponent(text = playlistName.value)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -130,101 +135,3 @@ fun ViewPlaylistScreen(
 
     }
 }
-//@Composable
-//fun TrackRow(
-//    track: Track,
-//    isLiked: Boolean,
-//    onLikeClick: () -> Unit,
-//    onTrackClick: () -> Unit
-//) {
-//    Row(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .clickable { onTrackClick() }
-//            .padding(8.dp),
-//        verticalAlignment = Alignment.CenterVertically
-//    ) {
-//        Image(
-//            painter = rememberAsyncImagePainter(model = track.imageUrl),
-//            contentDescription = "Track Image",
-//            modifier = Modifier
-//                .size(60.dp)
-//                .clip(RoundedCornerShape(4.dp))
-//                .padding(end = 8.dp),
-//            contentScale = ContentScale.Fit
-//        )
-//        Column(
-//            modifier = Modifier.weight(1f)
-//        ) {
-//            Text(
-//                text = track.title,
-//                color = White80,
-//                style = MaterialTheme.typography.bodyMedium
-//            )
-//
-//            Text(
-//                text = track.artist,
-//                color = White80,
-//                style = MaterialTheme.typography.labelSmall
-//            )
-//        }
-//        IconButton(
-//            onClick = onLikeClick
-//        ) {
-//            Icon(
-//                imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-//                contentDescription = if (isLiked) "Unlike" else "Like",
-//                tint = if (isLiked) Color.Red else Color.Gray
-//            )
-//        }
-//    }
-//}
-
-//@Composable
-//fun PlaylistTrackRow(
-//    track: Track,
-//    onTrackClick: () -> Unit,
-//
-//) {
-//    Row(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .clickable { onTrackClick() }
-//            .padding(8.dp),
-//        verticalAlignment = Alignment.CenterVertically
-//    ) {
-//        Image(
-//            painter = rememberAsyncImagePainter(model = track.imageUrl),
-//            contentDescription = "Track Image",
-//            modifier = Modifier
-//                .size(60.dp)
-//                .clip(RoundedCornerShape(4.dp))
-//                .padding(end = 8.dp),
-//            contentScale = ContentScale.Fit
-//        )
-//        Column(
-//            modifier = Modifier.weight(1f)
-//        ) {
-//            Text(
-//                text = track.title,
-//                color = White80,
-//                style = MaterialTheme.typography.bodyMedium
-//            )
-//
-//            Text(
-//                text = track.artist,
-//                color = White80,
-//                style = MaterialTheme.typography.labelSmall
-//            )
-//        }
-////        IconButton(
-////            onClick = onRemove
-////        ) {
-////            Icon(
-////                imageVector = if (isAdded) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-////                contentDescription = if (isAdded) "Unlike" else "Like",
-////                tint = if (isAdded) Color.Red else Color.Gray
-////            )
-////        }
-//    }
-//}

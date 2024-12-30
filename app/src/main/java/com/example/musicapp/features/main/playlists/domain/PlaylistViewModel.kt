@@ -20,13 +20,16 @@ class PlaylistViewModel @Inject constructor(
         return repository.getPlaylistTracksFlow(playlistId)
     }
 
-    fun getPlaylistName(userId: String, playlistId: String): String {
+    suspend fun getPlaylistName(userId: String, playlistId: String): String {
         return repository.getPlaylistName(userId, playlistId)
     }
 
-    suspend fun createPlaylist(userId: String, name: String): String {
+    suspend fun createPlaylist(userId: String, name: String): Int {
         val response = repository.createPlaylist(userId, name)
-        return response.id.toString()
+        if (response != null) {
+            return response.id
+        }
+        return 1
     }
 
     fun addTrackToPlaylist(playlistId: String, trackId: String) {

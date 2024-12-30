@@ -28,9 +28,13 @@ import com.example.musicapp.components.HeaderComponent
 import com.example.musicapp.features.main.BottomTrackBar
 import com.example.musicapp.features.main.likedtracks.data.Track
 import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
+import com.example.musicapp.ui.theme.Black80
+import com.example.musicapp.ui.theme.Black90
+import com.example.musicapp.ui.theme.Red60
 import com.example.musicapp.ui.theme.White80
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     likedTracksViewModel: LikedTracksViewModel = hiltViewModel(),
@@ -74,9 +78,13 @@ fun SearchScreen(
                         style = MaterialTheme.typography.bodySmall
                     )
                 },
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedTextColor = White80,
+                    focusedBorderColor = Red60,
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.DarkGray, RoundedCornerShape(4.dp)),
+                    .background(Black80, RoundedCornerShape(4.dp)),
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -106,8 +114,6 @@ fun SearchScreen(
                     )
                 }
             }
-
-
         }
     }
 }

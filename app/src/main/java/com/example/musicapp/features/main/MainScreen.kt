@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -80,18 +81,25 @@ fun MainAppScreen(
         bottomBar = {
             Column {
 
-//                currentTrack?.let { track ->
-//                    BottomTrackBar(
-//                        track = track,
-//                        isPlaying = isPlaying,
-//                        onPlayClick = {
-//                            likedTracksViewModel.togglePlayPause(likedTracksViewModel.currentSourcePage.value ?: "Unknown")
-//                        },
-//                        onTrackClick = {
-//                            likedTracksViewModel.playTrack(track, likedTracksViewModel.currentSourcePage.value ?: "Unknown")
-//                        }
-//                    )
-//                }
+
+                currentTrack?.let { track ->
+                    BottomTrackBar(
+                        track = track,
+                        isPlaying = isPlaying,
+                        onPlayClick = {
+                            likedTracksViewModel.togglePlayPause(likedTracksViewModel.currentSourcePage.value ?: "Unknown")
+                        },
+                        onTrackClick = {
+                            likedTracksViewModel.playTrack(track, likedTracksViewModel.currentSourcePage.value ?: "Unknown")
+                        },
+                        onNextClick = {
+                            likedTracksViewModel.skipToNextTrack()
+                        },
+                        onPreviousClick = {
+                            likedTracksViewModel.skipToPreviousTrack()
+                        }
+                    )
+                }
 
 
                 NavigationBar(
@@ -137,24 +145,7 @@ fun MainAppScreen(
                     }
                 }
 
-                currentTrack?.let { track ->
-                    BottomTrackBar(
-                        track = track,
-                        isPlaying = isPlaying,
-                        onPlayClick = {
-                            likedTracksViewModel.togglePlayPause(likedTracksViewModel.currentSourcePage.value ?: "Unknown")
-                        },
-                        onTrackClick = {
-                            likedTracksViewModel.playTrack(track, likedTracksViewModel.currentSourcePage.value ?: "Unknown")
-                        },
-                        onNextClick = {
-                            likedTracksViewModel.skipToNextTrack()
-                        },
-                        onPreviousClick = {
-                            likedTracksViewModel.skipToPreviousTrack()
-                        }
-                    )
-                }
+
 
 
 
@@ -209,11 +200,11 @@ fun MainAppScreen(
                     composable("create_playlist") {
                         CreatePlaylistScreen(
                             onNavigateBack = { profileNavController.popBackStack() },
-                            onNavigateToPlaylist = { playlistId ->
-                                profileNavController.navigate("view_playlist/$playlistId") {
-                                    popUpTo("profile_screen") { inclusive = false }
-                                }
-                            }
+//                            onNavigateToPlaylist = { playlistId ->
+//                                profileNavController.navigate("view_playlist/$playlistId") {
+//                                    popUpTo("profile_screen") { inclusive = false }
+//                                }
+//                            }
                         )
                     }
 
@@ -292,7 +283,7 @@ fun BottomTrackBar(
             }
             IconButton(onClick = onPlayClick) {
                 Icon(
-                    imageVector = if (isPlaying) Icons.Outlined.PlayArrow else Icons.Default.PlayArrow,
+                    imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (isPlaying) "Pause Icon" else "Play Icon",
                     tint = Color.White)
             }

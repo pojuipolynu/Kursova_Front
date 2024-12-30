@@ -146,6 +146,20 @@ class LikedTracksViewModel @Inject constructor(
         }
     }
 
+    fun loadFavourites(userId: String) {
+        viewModelScope.launch {
+            try {
+                val favourites = likedTracksRepository.getFavourites(userId)
+                _likedTracksState.value = LikedTracksState(
+                    tracks = favourites,
+                    likedTrackIds = favourites.map { it.id.toString() }.toSet()
+                )
+            } catch (e: Exception) {
+                Log.e("LikedTracksViewModel", "Error loading favourites: ${e.message}")
+            }
+        }
+    }
+
     suspend fun getTrackById(trackId: String): Track? {
         return likedTracksRepository.getTrackById(trackId)
     }
@@ -185,19 +199,7 @@ class LikedTracksViewModel @Inject constructor(
     }
 
 
-    fun loadFavourites(userId: String) {
-        viewModelScope.launch {
-            try {
-                val favourites = likedTracksRepository.getFavourites(userId)
-                _likedTracksState.value = LikedTracksState(
-                    tracks = favourites,
-                    likedTrackIds = favourites.map { it.id.toString() }.toSet()
-                )
-            } catch (e: Exception) {
-                Log.e("LikedTracksViewModel", "Error loading favourites: ${e.message}")
-            }
-        }
-    }
+
 
 
     fun toggleLike(userId: String, trackId: String) {

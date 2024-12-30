@@ -44,12 +44,11 @@ fun FavouriteScreen(
     onTrackClick: (String) -> Unit
 ) {
     val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
-    val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
-    val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
 
     LaunchedEffect(Unit) {
         Log.d("FavouriteScreen", "Loading favourites")
         likedTracksViewModel.loadFavourites(userId)
+        likedTracksViewModel.setCurrentSourcePage("Favourite")
     }
 
     Box(
@@ -74,7 +73,10 @@ fun FavouriteScreen(
                         isLiked = likedTracksState.likedTrackIds.contains(track.id.toString()),
                         onLikeClick = { likedTracksViewModel.toggleLike(userId, track.id) },
                         onTrackClick = {
-                            likedTracksViewModel.playTrack(track)
+                            likedTracksViewModel.playTrack(
+                                track,
+                                "Favourite"
+                            )
                             onTrackClick(track.id)
                         }
                     )

@@ -1,38 +1,33 @@
 package com.example.musicapp.features.main
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -56,8 +51,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.musicapp.components.HeaderComponent
 import com.example.musicapp.features.main.likedtracks.data.Track
+
 import com.example.musicapp.features.main.playlists.presentation.CreatePlaylistScreen
 import com.example.musicapp.features.main.playlists.presentation.ViewPlaylistScreen
 import kotlinx.coroutines.delay
@@ -141,6 +136,28 @@ fun MainAppScreen(
                         )
                     }
                 }
+
+                currentTrack?.let { track ->
+                    BottomTrackBar(
+                        track = track,
+                        isPlaying = isPlaying,
+                        onPlayClick = {
+                            likedTracksViewModel.togglePlayPause(likedTracksViewModel.currentSourcePage.value ?: "Unknown")
+                        },
+                        onTrackClick = {
+                            likedTracksViewModel.playTrack(track, likedTracksViewModel.currentSourcePage.value ?: "Unknown")
+                        },
+                        onNextClick = {
+                            likedTracksViewModel.skipToNextTrack()
+                        },
+                        onPreviousClick = {
+                            likedTracksViewModel.skipToPreviousTrack()
+                        }
+                    )
+                }
+
+
+
             }
         }
     ) { innerPadding ->
@@ -154,7 +171,7 @@ fun MainAppScreen(
                     userId = authViewModel.getCurrentUserId() ?: "1",
                     onTrackClick = { trackId ->
                         val track = likedTracksViewModel.getTrackByIdSync(trackId)
-                        track?.let { likedTracksViewModel.playTrack(it) }
+                        track?.let { likedTracksViewModel.playTrack(it, "Search") }
                     }
                 )
             }
@@ -163,10 +180,11 @@ fun MainAppScreen(
                     userId = authViewModel.getCurrentUserId() ?: "1",
                     onTrackClick = { trackId ->
                         val track = likedTracksViewModel.getTrackByIdSync(trackId)
-                        track?.let { likedTracksViewModel.playTrack(it) }
+                        track?.let { likedTracksViewModel.playTrack(it, "Favourite") }
                     }
                 )
             }
+
             composable(BottomNavItem.Profile.route) {
                 val profileNavController = rememberNavController()
                 NavHost(
@@ -218,13 +236,14 @@ sealed class BottomNavItem(val route: String, val label: String, val icon: Image
     data object Favourite : BottomNavItem("favourite", "вподобане", Icons.Filled.Favorite)
     data object Profile : BottomNavItem("profile", "профіль", Icons.Filled.Person)
 }
-
 @Composable
 fun BottomTrackBar(
     track: Track,
     isPlaying: Boolean,
     onPlayClick: () -> Unit,
-    onTrackClick: () -> Unit
+    onTrackClick: () -> Unit,
+    onNextClick: () -> Unit,
+    onPreviousClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -259,88 +278,27 @@ fun BottomTrackBar(
                 fontSize = 14.sp
             )
         }
-        IconButton(onClick = onPlayClick) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Outlined.PlayArrow else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) "Pause Icon" else "Play Icon",
-                tint = Color.White
-            )
-        }
-    }
-}
-
-
-@Composable
-fun TrackPlayerScreen(
-    track: Track,
-    likedTracksViewModel: LikedTracksViewModel = hiltViewModel()
-) {
-    val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
-    val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
-    val currentPosition by likedTracksViewModel.currentPosition.collectAsState()
-
-
-
-    LaunchedEffect(currentTrack) {
-        while (isActive) { // Перевіряємо, чи не завершено LaunchedEffect
-            likedTracksViewModel.updateCurrentPosition()
-            delay(1000) // Оновлюємо кожну секунду
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .padding(horizontal = 16.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            HeaderComponent(text = " ")
-            Spacer(modifier = Modifier.height(16.dp))
-            Image(
-                painter = rememberAsyncImagePainter(model = track.imageUrl),
-                contentDescription = "Track Image",
-                modifier = Modifier.size(200.dp),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = track.title,
-                fontWeight = FontWeight.Bold,
-                fontSize = 24.sp
-            )
-            Text(
-                text = track.artist,
-                fontSize = 18.sp,
-                color = Color.White
-            )
-            Slider(
-                value = currentPosition.toFloat(),
-                onValueChange = { newPosition ->
-                    likedTracksViewModel.seekTo(newPosition.toInt())
-                },
-
-                valueRange = 0f..(likedTracksViewModel.getDuration().toFloat()),
-                colors = SliderDefaults.colors(Color.Red, Color.Red)
-            )
-            Button(
-                modifier = Modifier.height(70.dp).width(70.dp),
-                colors =  ButtonDefaults.buttonColors(Color.Red),
-                onClick = {
-                likedTracksViewModel.togglePlayPause()
-
-            }) {
+        Row {
+            IconButton(onClick = onPreviousClick) {
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowLeft,
+                    contentDescription = "Previous Track",
+                    tint = Color.White
+                )
+            }
+            IconButton(onClick = onPlayClick) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Outlined.PlayArrow else Icons.Default.PlayArrow,
                     contentDescription = if (isPlaying) "Pause Icon" else "Play Icon",
-                    tint = Color.White,
-                    modifier = Modifier.height(42.dp)
+                    tint = Color.White)
+            }
+            IconButton(onClick = onNextClick) {
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowRight,
+                    contentDescription = "Next Track",
+                    tint = Color.White
                 )
             }
         }
     }
 }
-

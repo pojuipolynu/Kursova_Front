@@ -48,6 +48,7 @@ import com.example.musicapp.features.main.playlists.domain.PlaylistViewModel
 import com.example.musicapp.ui.theme.Black90
 import com.example.musicapp.ui.theme.White80
 import kotlinx.coroutines.launch
+import com.example.musicapp.features.main.search.presentation.TrackRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,15 +57,24 @@ fun ViewPlaylistScreen(
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
     playlistId: String,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onTrackClick: (String) -> Unit,
 ) {
-    val playlistTracks by playlistViewModel.getPlaylistTracks(playlistId).collectAsState(initial = emptyList())
+    val playlistTracks by playlistViewModel.getPlaylistTracks(playlistId)
+        .collectAsState(initial = emptyList())
     val allTracks by playlistViewModel.allTracks.collectAsState(initial = emptyList())
     val playlistName =
         authViewModel.getCurrentUserId()?.let { playlistViewModel.getPlaylistName(it, playlistId) }
 
     val editingMode = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        //МОК ТРЕБА ЗАМІНИТИ
+        likedTracksViewModel.loadFavourites("1")
+    }
 
     Box(
         modifier = Modifier
@@ -83,82 +93,138 @@ fun ViewPlaylistScreen(
 
             LazyColumn(modifier = Modifier.weight(1f)) {
                 if (editingMode.value) {
-                    items(allTracks.size) { index ->
-                        val track = allTracks[index]
-                        PlaylistTrackRow(
+                    items(playlistTracks.size) { index ->
+                        val track = playlistTracks[index]
+                        val isLiked =
+                            likedTracksState.likedTrackIds.contains(track.id.toString()) // Check if track is liked
+                        TrackRow(
                             track = track,
+                            isLiked = isLiked,
+                            onLikeClick = { likedTracksViewModel.toggleLike("1", track.id) },
                             onTrackClick = {
-                                likedTracksViewModel.playTrack(track)
-                                val selectedTrack = likedTracksViewModel.getTrackByIdSync(track.id)
-                                selectedTrack?.let { likedTracksViewModel.playTrack(it) }
+                                likedTracksViewModel.playTrack(track, "Playlist")
+                                onTrackClick(track.id)
                             }
+
                         )
                     }
                 } else {
                     items(playlistTracks.size) { index ->
                         val track = playlistTracks[index]
-                        PlaylistTrackRow(
+                        val isLiked =
+                            likedTracksState.likedTrackIds.contains(track.id.toString())
+                        TrackRow(
                             track = track,
+                            isLiked = isLiked,
+                            onLikeClick = { likedTracksViewModel.toggleLike("1", track.id) },
                             onTrackClick = {
-                                likedTracksViewModel.playTrack(track)
-                                val selectedTrack = likedTracksViewModel.getTrackByIdSync(track.id)
-                                selectedTrack?.let { likedTracksViewModel.playTrack(it) }
+                                likedTracksViewModel.playTrack(track, "Playlist")
+                                onTrackClick(track.id)
                             }
+
                         )
                     }
                 }
             }
         }
+
     }
 }
-
-
-
-@Composable
-fun PlaylistTrackRow(
-    track: Track,
-    onTrackClick: () -> Unit,
-
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onTrackClick() }
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Image(
-            painter = rememberAsyncImagePainter(model = track.imageUrl),
-            contentDescription = "Track Image",
-            modifier = Modifier
-                .size(60.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .padding(end = 8.dp),
-            contentScale = ContentScale.Fit
-        )
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = track.title,
-                color = White80,
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Text(
-                text = track.artist,
-                color = White80,
-                style = MaterialTheme.typography.labelSmall
-            )
-        }
-//        IconButton(
-//            onClick = onRemove
+//@Composable
+//fun TrackRow(
+//    track: Track,
+//    isLiked: Boolean,
+//    onLikeClick: () -> Unit,
+//    onTrackClick: () -> Unit
+//) {
+//    Row(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .clickable { onTrackClick() }
+//            .padding(8.dp),
+//        verticalAlignment = Alignment.CenterVertically
+//    ) {
+//        Image(
+//            painter = rememberAsyncImagePainter(model = track.imageUrl),
+//            contentDescription = "Track Image",
+//            modifier = Modifier
+//                .size(60.dp)
+//                .clip(RoundedCornerShape(4.dp))
+//                .padding(end = 8.dp),
+//            contentScale = ContentScale.Fit
+//        )
+//        Column(
+//            modifier = Modifier.weight(1f)
 //        ) {
-//            Icon(
-//                imageVector = if (isAdded) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-//                contentDescription = if (isAdded) "Unlike" else "Like",
-//                tint = if (isAdded) Color.Red else Color.Gray
+//            Text(
+//                text = track.title,
+//                color = White80,
+//                style = MaterialTheme.typography.bodyMedium
+//            )
+//
+//            Text(
+//                text = track.artist,
+//                color = White80,
+//                style = MaterialTheme.typography.labelSmall
 //            )
 //        }
-    }
-}
+//        IconButton(
+//            onClick = onLikeClick
+//        ) {
+//            Icon(
+//                imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+//                contentDescription = if (isLiked) "Unlike" else "Like",
+//                tint = if (isLiked) Color.Red else Color.Gray
+//            )
+//        }
+//    }
+//}
+
+//@Composable
+//fun PlaylistTrackRow(
+//    track: Track,
+//    onTrackClick: () -> Unit,
+//
+//) {
+//    Row(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .clickable { onTrackClick() }
+//            .padding(8.dp),
+//        verticalAlignment = Alignment.CenterVertically
+//    ) {
+//        Image(
+//            painter = rememberAsyncImagePainter(model = track.imageUrl),
+//            contentDescription = "Track Image",
+//            modifier = Modifier
+//                .size(60.dp)
+//                .clip(RoundedCornerShape(4.dp))
+//                .padding(end = 8.dp),
+//            contentScale = ContentScale.Fit
+//        )
+//        Column(
+//            modifier = Modifier.weight(1f)
+//        ) {
+//            Text(
+//                text = track.title,
+//                color = White80,
+//                style = MaterialTheme.typography.bodyMedium
+//            )
+//
+//            Text(
+//                text = track.artist,
+//                color = White80,
+//                style = MaterialTheme.typography.labelSmall
+//            )
+//        }
+////        IconButton(
+////            onClick = onRemove
+////        ) {
+////            Icon(
+////                imageVector = if (isAdded) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+////                contentDescription = if (isAdded) "Unlike" else "Like",
+////                tint = if (isAdded) Color.Red else Color.Gray
+////            )
+////        }
+//    }
+//}

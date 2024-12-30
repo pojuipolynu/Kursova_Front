@@ -99,7 +99,7 @@ fun SearchScreen(
                         isLiked = isLiked,
                         onLikeClick = { likedTracksViewModel.toggleLike(userId, track.id) },
                         onTrackClick = {
-                            likedTracksViewModel.playTrack(track, "Favourite")
+                            likedTracksViewModel.playTrack(track, "Search")
                             onTrackClick(track.id)
                         }
 

@@ -80,18 +80,18 @@ fun MainAppScreen(
         bottomBar = {
             Column {
 
-                currentTrack?.let { track ->
-                    BottomTrackBar(
-                        track = track,
-                        isPlaying = isPlaying,
-                        onPlayClick = {
-                            likedTracksViewModel.togglePlayPause()
-                        },
-                        onTrackClick = {
-                            likedTracksViewModel.playTrack(track)
-                        }
-                    )
-                }
+//                currentTrack?.let { track ->
+//                    BottomTrackBar(
+//                        track = track,
+//                        isPlaying = isPlaying,
+//                        onPlayClick = {
+//                            likedTracksViewModel.togglePlayPause(likedTracksViewModel.currentSourcePage.value ?: "Unknown")
+//                        },
+//                        onTrackClick = {
+//                            likedTracksViewModel.playTrack(track, likedTracksViewModel.currentSourcePage.value ?: "Unknown")
+//                        }
+//                    )
+//                }
 
 
                 NavigationBar(
@@ -222,6 +222,10 @@ fun MainAppScreen(
                         ViewPlaylistScreen(
                             playlistId = playlistId,
                             onNavigateBack = { profileNavController.popBackStack() },
+                            onTrackClick = { trackId ->
+                                val track = likedTracksViewModel.getTrackByIdSync(trackId)
+                                track?.let { likedTracksViewModel.playTrack(it, "Playlist") }
+                            }
                         )
                     }
                 }

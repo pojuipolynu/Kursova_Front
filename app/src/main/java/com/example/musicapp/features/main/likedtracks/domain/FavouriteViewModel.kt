@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musicapp.features.main.likedtracks.data.LikedTracksRepository
 import com.example.musicapp.features.main.likedtracks.data.Track
+import com.example.musicapp.features.main.playlists.data.PlaylistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,7 +69,8 @@ class MediaPlayerManager @Inject constructor() {
 @HiltViewModel
 class LikedTracksViewModel @Inject constructor(
     private val likedTracksRepository: LikedTracksRepository,
-    private val mediaPlayerManager: MediaPlayerManager
+    private val mediaPlayerManager: MediaPlayerManager,
+    private val playlistRepository: PlaylistRepository
 ) : ViewModel() {
 
     private val _likedTracksState = MutableStateFlow(LikedTracksState(emptyList(), emptySet()))
@@ -89,16 +91,26 @@ class LikedTracksViewModel @Inject constructor(
     private val _filteredTracks = MutableStateFlow<List<Track>>(emptyList())
     val filteredTracks: StateFlow<List<Track>> = _filteredTracks
 
+    private val _playlistTracks = MutableStateFlow<List<Track>>(emptyList())
+    val playlistTracks: StateFlow<List<Track>> = _playlistTracks
+
     private val _searchResults = MutableStateFlow<List<Track>>(emptyList())
     val searchResults: StateFlow<List<Track>> = _searchResults
 
     private val _currentSourcePage = MutableStateFlow<String?>(null)
     val currentSourcePage: StateFlow<String?> = _currentSourcePage
 
+    private val _currentPlaylistPage = MutableStateFlow<String>("")
+    val currentPlaylistPage: StateFlow<String> = _currentPlaylistPage
+
     private var currentLikedTrackIndex: Int? = null
 
     fun setCurrentSourcePage(page: String) {
         _currentSourcePage.value = page
+    }
+
+    fun setCurrentPlaylistPage(id: String) {
+        _currentPlaylistPage.value = id
     }
 
 
@@ -125,6 +137,12 @@ class LikedTracksViewModel @Inject constructor(
         viewModelScope.launch {
             val tracks = likedTracksRepository.getTracks()
             _filteredTracks.value = tracks
+        }
+    }
+
+    fun loadPlaylistTracks() {
+        viewModelScope.launch {
+           val tracks = playlistRepository.getPlaylistTracksFlow(_currentPlaylistPage.value)
         }
     }
 

@@ -13,30 +13,6 @@ class LikedTracksRepository @Inject constructor(
     private val apiService: ApiService
 ) {
 
-//    {
-//        "title": "False Alarm",
-//        "artist": "The Weeknd",
-//        "fileUrl": "https://f003.backblazeb2.com/file/music-app-file/music/The+Weeknd-False+Alarm.mp3",
-//        "imageUrl": "https://f003.backblazeb2.com/file/music-app-file/covers/alarm.jpg",
-//        "duration": "3:41"
-//    }
-//    {
-//        "title": "The Show Must Go On",
-//        "artist": "Queen",
-//        "fileUrl": "https://f003.backblazeb2.com/file/music-app-file/music/The+Show+Must+Go+On+(Remastered+2011)+-+Queen.m4a",
-//        "imageUrl": "https://f003.backblazeb2.com/file/music-app-file/covers/Show.jpg",
-//        "duration": "4:08"
-//    }
-//    {
-//        "title": "Diet Mountain Dew",
-//        "artist": "Lana Del Rey",
-//        "fileUrl": "https://f003.backblazeb2.com/file/music-app-file/music/Lana+Del+Rey-Diet+Mountain+Dew.mp3",
-//        "imageUrl": "https://f003.backblazeb2.com/file/music-app-file/covers/Diet.jpg",
-//        "duration": "3:43"
-//    }
-
-
-
     private val likedTrackIds = mutableSetOf<String>()
 
     // Отримати всі треки через API
@@ -75,8 +51,7 @@ class LikedTracksRepository @Inject constructor(
 
     suspend fun getFavourites(userId: String): List<Track> {
         return try {
-            val userIdInt = userId.toIntOrNull() ?: throw IllegalArgumentException("Invalid userId: $userId")
-            val response = apiService.getFavourites(userIdInt.toString())
+            val response = apiService.getFavourites(userId)
             response.songs // Витягніть список треків із об'єкта FavouritesResponse
         } catch (e: Exception) {
             Log.e("LikedTracksRepository", "Error fetching favourites: ${e.message}")

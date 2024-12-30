@@ -30,5 +30,11 @@ class AuthViewModel @Inject constructor(
 
     fun getCurrentUser(): UserData? = authRepository.getCurrentUser()
 
+    fun getCurrentUserId(): String? = authRepository.getCurrentUserId()
+
     fun isUserLoggedIn(): Boolean = authRepository.isUserLoggedIn()
+
+    suspend fun saveUserStatus() {
+        authRepository.setUserStatus()
+    }
 }

@@ -1,5 +1,6 @@
 package com.example.musicapp.features.main.likedtracks.presentation
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -45,6 +46,7 @@ fun FavouriteScreen(
     val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
 
     LaunchedEffect(Unit) {
+        Log.d("FavouriteScreen", "Loading favourites")
         likedTracksViewModel.loadFavourites(userId)
         likedTracksViewModel.setCurrentSourcePage("Favourite")
     }

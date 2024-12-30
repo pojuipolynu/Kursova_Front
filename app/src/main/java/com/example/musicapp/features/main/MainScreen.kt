@@ -49,17 +49,23 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.musicapp.features.main.likedtracks.data.Track
+
+import com.example.musicapp.features.main.playlists.presentation.CreatePlaylistScreen
+import com.example.musicapp.features.main.playlists.presentation.ViewPlaylistScreen
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 
 @Composable
 fun MainAppScreen(
-    authViewModel: AuthViewModel,
-    onLogout: () -> Unit
+    navController: NavController,
 ) {
     val bottomNavController = rememberNavController()
     val likedTracksViewModel: LikedTracksViewModel = hiltViewModel()
+    val authViewModel: AuthViewModel = hiltViewModel()
 
     val bottomNavItems = listOf(
         BottomNavItem.Search,
@@ -73,6 +79,21 @@ fun MainAppScreen(
     Scaffold(
         bottomBar = {
             Column {
+
+                currentTrack?.let { track ->
+                    BottomTrackBar(
+                        track = track,
+                        isPlaying = isPlaying,
+                        onPlayClick = {
+                            likedTracksViewModel.togglePlayPause()
+                        },
+                        onTrackClick = {
+                            likedTracksViewModel.playTrack(track)
+                        }
+                    )
+                }
+
+
                 NavigationBar(
                     containerColor = Black90,
                 ) {
@@ -115,6 +136,7 @@ fun MainAppScreen(
                         )
                     }
                 }
+
                 currentTrack?.let { track ->
                     BottomTrackBar(
                         track = track,
@@ -135,6 +157,7 @@ fun MainAppScreen(
                 }
 
 
+
             }
         }
     ) { innerPadding ->
@@ -145,7 +168,7 @@ fun MainAppScreen(
         ) {
             composable(BottomNavItem.Search.route) {
                 SearchScreen(
-                    userId = "1",
+                    userId = authViewModel.getCurrentUserId() ?: "1",
                     onTrackClick = { trackId ->
                         val track = likedTracksViewModel.getTrackByIdSync(trackId)
                         track?.let { likedTracksViewModel.playTrack(it, "Search") }
@@ -154,7 +177,7 @@ fun MainAppScreen(
             }
             composable(BottomNavItem.Favourite.route) {
                 FavouriteScreen(
-                    userId = "1",
+                    userId = authViewModel.getCurrentUserId() ?: "1",
                     onTrackClick = { trackId ->
                         val track = likedTracksViewModel.getTrackByIdSync(trackId)
                         track?.let { likedTracksViewModel.playTrack(it, "Favourite") }
@@ -163,7 +186,45 @@ fun MainAppScreen(
             }
 
             composable(BottomNavItem.Profile.route) {
-                ProfileScreen()
+                val profileNavController = rememberNavController()
+                NavHost(
+                    navController = profileNavController,
+                    startDestination = "profile_screen",
+                ) {
+                    composable("profile_screen") {
+                        ProfileScreen(
+                            onLogout = {
+                                authViewModel.signOut()
+                                navController.navigate("auth_graph") {
+                                    popUpTo("main_graph") { inclusive = true }
+                                }
+                            },
+                            onNavigateToCreatePlaylist = { profileNavController.navigate("create_playlist") },
+                            onNavigateToViewPlaylist = { playlistId ->
+                                profileNavController.navigate("view_playlist/$playlistId")
+                            }
+                        )
+                    }
+
+                    composable("create_playlist") {
+                        CreatePlaylistScreen(
+                            onNavigateBack = { profileNavController.popBackStack() },
+                            onNavigateToPlaylist = { playlistId ->
+                                profileNavController.navigate("view_playlist/$playlistId") {
+                                    popUpTo("profile_screen") { inclusive = false }
+                                }
+                            }
+                        )
+                    }
+
+                    composable("view_playlist/{playlistId}") { backStackEntry ->
+                        val playlistId = backStackEntry.arguments?.getString("playlistId") ?: ""
+                        ViewPlaylistScreen(
+                            playlistId = playlistId,
+                            onNavigateBack = { profileNavController.popBackStack() },
+                        )
+                    }
+                }
             }
         }
     }

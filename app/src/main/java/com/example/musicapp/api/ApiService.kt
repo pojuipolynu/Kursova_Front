@@ -1,6 +1,7 @@
 package com.example.musicapp.api
 
 import com.example.musicapp.features.main.likedtracks.data.Track
+import com.example.musicapp.features.main.playlists.data.CreatePlaylistRequest
 import com.example.musicapp.features.main.profile.data.User
 import com.example.musicapp.features.main.profile.data.Playlist
 import retrofit2.http.GET
@@ -27,7 +28,7 @@ data class PlaylistTracksResponse(
 data class SongsResponse(
     @SerializedName("songs") val songs: List<Track>
 )
-//
+
 //data class Song(
 //    @SerializedName("id") val id: Int,
 //    @SerializedName("title") val title: String,
@@ -79,9 +80,9 @@ interface ApiService {
     ): List<Playlist>
 
     @GET("user/playlists/{user_id}/{playlist_id}")
-    fun getPlaylistDetails(
+    suspend fun getPlaylistDetails(
         @Path("user_id") userId: String,
-        @Path("playlist_id") playlistId: String
+        @Path("playlist_id") playlistId: Int
     ): PlaylistResponse
 
 
@@ -89,14 +90,15 @@ interface ApiService {
     @POST("user/create/playlist/{user_id}")
     suspend fun createPlaylist(
         @Path("user_id") userId: String,
-        @Body playlistName: String
+        @Body request: CreatePlaylistRequest
     ): PlaylistResponse
+
 
     // Add a track to a playlist
     @POST("user/playlist/{playlist_id}/songs/{song_id}")
     suspend fun addTrackToPlaylist(
-        @Path("playlist_id") playlistId: String,
-        @Path("song_id") songId: String
+        @Path("playlist_id") playlistId: Int,
+        @Path("song_id") songId: Int
     )
 
     // Remove a track from a playlist

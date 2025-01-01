@@ -25,15 +25,17 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.musicapp.components.HeaderComponent
-import com.example.musicapp.features.main.BottomTrackBar
 import com.example.musicapp.features.main.likedtracks.data.Track
 import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
+import com.example.musicapp.ui.theme.Black80
+import com.example.musicapp.ui.theme.Red60
 import com.example.musicapp.ui.theme.White80
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
-    likedTracksViewModel: LikedTracksViewModel = hiltViewModel(),
+    likedTracksViewModel: LikedTracksViewModel,
     onTrackClick: (String) -> Unit,
     userId: String,
 ) {
@@ -74,9 +76,13 @@ fun SearchScreen(
                         style = MaterialTheme.typography.bodySmall
                     )
                 },
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedTextColor = White80,
+                    focusedBorderColor = Red60,
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.DarkGray, RoundedCornerShape(4.dp)),
+                    .background(Black80, RoundedCornerShape(4.dp)),
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -93,21 +99,19 @@ fun SearchScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(filteredTracks) { track ->
-                    val isLiked = likedTracksState.likedTrackIds.contains(track.id.toString()) // Check if track is liked
+                    val isLiked = likedTracksState.likedTrackIds.contains(track.id.toString())
                     TrackRow(
                         track = track,
                         isLiked = isLiked,
                         onLikeClick = { likedTracksViewModel.toggleLike(userId, track.id) },
                         onTrackClick = {
-                            likedTracksViewModel.playTrack(track, "Favourite")
+                            likedTracksViewModel.playTrack(track, "Search")
                             onTrackClick(track.id)
                         }
 
                     )
                 }
             }
-
-
         }
     }
 }
@@ -146,7 +150,7 @@ fun TrackRow(
             )
 
             Text(
-                text = track.artist,
+                text = track.artist_id.toString(),
                 color = White80,
                 style = MaterialTheme.typography.labelSmall
             )

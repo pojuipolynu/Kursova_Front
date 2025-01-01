@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musicapp.features.main.likedtracks.data.LikedTracksRepository
 import com.example.musicapp.features.main.likedtracks.data.Track
+import com.example.musicapp.features.main.playlists.data.PlaylistRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +14,7 @@ import android.media.MediaPlayer
 import javax.inject.Singleton
 import kotlinx.coroutines.runBlocking
 import android.util.Log
+import kotlinx.coroutines.delay
 
 
 @Singleton
@@ -68,7 +70,8 @@ class MediaPlayerManager @Inject constructor() {
 @HiltViewModel
 class LikedTracksViewModel @Inject constructor(
     private val likedTracksRepository: LikedTracksRepository,
-    private val mediaPlayerManager: MediaPlayerManager
+    private val mediaPlayerManager: MediaPlayerManager,
+    private val playlistRepository: PlaylistRepository
 ) : ViewModel() {
 
     private val _likedTracksState = MutableStateFlow(LikedTracksState(emptyList(), emptySet()))
@@ -89,16 +92,26 @@ class LikedTracksViewModel @Inject constructor(
     private val _filteredTracks = MutableStateFlow<List<Track>>(emptyList())
     val filteredTracks: StateFlow<List<Track>> = _filteredTracks
 
+    private val _playlistTracks = MutableStateFlow<List<Track>>(emptyList())
+    val playlistTracks: StateFlow<List<Track>> = _playlistTracks
+
     private val _searchResults = MutableStateFlow<List<Track>>(emptyList())
     val searchResults: StateFlow<List<Track>> = _searchResults
 
     private val _currentSourcePage = MutableStateFlow<String?>(null)
     val currentSourcePage: StateFlow<String?> = _currentSourcePage
 
+    private val _currentPlaylistPage = MutableStateFlow<String>("")
+    val currentPlaylistPage: StateFlow<String> = _currentPlaylistPage
+
     private var currentLikedTrackIndex: Int? = null
 
     fun setCurrentSourcePage(page: String) {
         _currentSourcePage.value = page
+    }
+
+    fun setCurrentPlaylistPage(id: String) {
+        _currentPlaylistPage.value = id
     }
 
 
@@ -125,6 +138,26 @@ class LikedTracksViewModel @Inject constructor(
         viewModelScope.launch {
             val tracks = likedTracksRepository.getTracks()
             _filteredTracks.value = tracks
+        }
+    }
+
+    fun loadPlaylistTracks() {
+        viewModelScope.launch {
+           val tracks = playlistRepository.getPlaylistTracksFlow(_currentPlaylistPage.value)
+        }
+    }
+
+    fun loadFavourites(userId: String) {
+        viewModelScope.launch {
+            try {
+                val favourites = likedTracksRepository.getFavourites(userId)
+                _likedTracksState.value = LikedTracksState(
+                    tracks = favourites,
+                    likedTrackIds = favourites.map { it.id.toString() }.toSet()
+                )
+            } catch (e: Exception) {
+                Log.e("LikedTracksViewModel", "Error loading favourites: ${e.message}")
+            }
         }
     }
 
@@ -161,25 +194,13 @@ class LikedTracksViewModel @Inject constructor(
             val allTracks = likedTracksRepository.getTracks()
             _filteredTracks.value = allTracks.filter {
                 it.title.contains(_searchQuery.value, ignoreCase = true) ||
-                        it.artist.contains(_searchQuery.value, ignoreCase = true)
+                        it.artist_id.toString().contains(_searchQuery.value, ignoreCase = true)
             }
         }
     }
 
 
-    fun loadFavourites(userId: String) {
-        viewModelScope.launch {
-            try {
-                val favourites = likedTracksRepository.getFavourites(userId)
-                _likedTracksState.value = LikedTracksState(
-                    tracks = favourites,
-                    likedTrackIds = favourites.map { it.id.toString() }.toSet()
-                )
-            } catch (e: Exception) {
-                Log.e("LikedTracksViewModel", "Error loading favourites: ${e.message}")
-            }
-        }
-    }
+
 
 
     fun toggleLike(userId: String, trackId: String) {
@@ -228,6 +249,7 @@ class LikedTracksViewModel @Inject constructor(
                 _currentTrack.emit(track)
                 _isPlaying.emit(true)
                 _currentSourcePage.emit(sourcePage)
+                startUpdatingPosition()
 
             } else if (!_isPlaying.value) {
                 mediaPlayerManager.resume()
@@ -235,6 +257,16 @@ class LikedTracksViewModel @Inject constructor(
             }
         }
     }
+
+    private fun startUpdatingPosition() {
+        viewModelScope.launch {
+            while (_isPlaying.value) {
+                _currentPosition.value = mediaPlayerManager.getCurrentPosition()
+                delay(1000)  // Оновлюємо позицію кожну секунду
+            }
+        }
+    }
+
 
     private fun playNextFavouriteTrack() {
         if (currentLikedTrackIndex != null) {
@@ -328,8 +360,15 @@ class LikedTracksViewModel @Inject constructor(
 
 
     fun seekTo(position: Int) {
-        mediaPlayerManager.seekTo(position)
-        _currentPosition.value = position
+        viewModelScope.launch {
+            // Оновлюємо поточну позицію
+            _currentPosition.value = position.toInt()
+
+            // Викликаємо метод для перемотування треку в MediaPlayerManager
+            mediaPlayerManager.seekTo(position)
+
+            // Якщо потрібно, можна оновити інші стани або виконати додаткові дії.
+        }
     }
 
     fun updateCurrentPosition() {

@@ -1,5 +1,6 @@
 package com.example.musicapp.features.main
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,7 +20,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,7 +33,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.musicapp.features.auth.domain.AuthViewModel
 import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
 import com.example.musicapp.features.main.likedtracks.presentation.FavouriteScreen
@@ -41,7 +41,7 @@ import com.example.musicapp.features.main.search.presentation.SearchScreen
 import com.example.musicapp.ui.theme.Black90
 import com.example.musicapp.ui.theme.White80
 
-import androidx.compose.runtime.collectAsState // Імпорт для collectAsState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -52,19 +52,19 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.musicapp.features.main.likedtracks.data.Track
+import com.example.musicapp.features.main.player.presentation.PlayerScreen
 
 import com.example.musicapp.features.main.playlists.presentation.CreatePlaylistScreen
 import com.example.musicapp.features.main.playlists.presentation.ViewPlaylistScreen
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 
 
 @Composable
 fun MainAppScreen(
+    likedTracksViewModel: LikedTracksViewModel,
     navController: NavController,
 ) {
     val bottomNavController = rememberNavController()
-    val likedTracksViewModel: LikedTracksViewModel = hiltViewModel()
+//    val likedTracksViewModel: LikedTracksViewModel = hiltViewModel()
     val authViewModel: AuthViewModel = hiltViewModel()
 
     val bottomNavItems = listOf(
@@ -79,16 +79,22 @@ fun MainAppScreen(
     Scaffold(
         bottomBar = {
             Column {
-
                 currentTrack?.let { track ->
                     BottomTrackBar(
                         track = track,
                         isPlaying = isPlaying,
                         onPlayClick = {
-                            likedTracksViewModel.togglePlayPause()
+                            likedTracksViewModel.togglePlayPause(likedTracksViewModel.currentSourcePage.value ?: "Unknown")
                         },
+                        onNavigateToPlayer = { navController.navigate("player_screen")},
                         onTrackClick = {
-                            likedTracksViewModel.playTrack(track)
+                            likedTracksViewModel.playTrack(track, likedTracksViewModel.currentSourcePage.value ?: "Unknown")
+                        },
+                        onNextClick = {
+                            likedTracksViewModel.skipToNextTrack()
+                        },
+                        onPreviousClick = {
+                            likedTracksViewModel.skipToPreviousTrack()
                         }
                     )
                 }
@@ -136,28 +142,6 @@ fun MainAppScreen(
                         )
                     }
                 }
-
-                currentTrack?.let { track ->
-                    BottomTrackBar(
-                        track = track,
-                        isPlaying = isPlaying,
-                        onPlayClick = {
-                            likedTracksViewModel.togglePlayPause(likedTracksViewModel.currentSourcePage.value ?: "Unknown")
-                        },
-                        onTrackClick = {
-                            likedTracksViewModel.playTrack(track, likedTracksViewModel.currentSourcePage.value ?: "Unknown")
-                        },
-                        onNextClick = {
-                            likedTracksViewModel.skipToNextTrack()
-                        },
-                        onPreviousClick = {
-                            likedTracksViewModel.skipToPreviousTrack()
-                        }
-                    )
-                }
-
-
-
             }
         }
     ) { innerPadding ->
@@ -168,6 +152,7 @@ fun MainAppScreen(
         ) {
             composable(BottomNavItem.Search.route) {
                 SearchScreen(
+                    likedTracksViewModel = likedTracksViewModel,
                     userId = authViewModel.getCurrentUserId() ?: "1",
                     onTrackClick = { trackId ->
                         val track = likedTracksViewModel.getTrackByIdSync(trackId)
@@ -177,6 +162,7 @@ fun MainAppScreen(
             }
             composable(BottomNavItem.Favourite.route) {
                 FavouriteScreen(
+                    likedTracksViewModel = likedTracksViewModel,
                     userId = authViewModel.getCurrentUserId() ?: "1",
                     onTrackClick = { trackId ->
                         val track = likedTracksViewModel.getTrackByIdSync(trackId)
@@ -208,29 +194,48 @@ fun MainAppScreen(
 
                     composable("create_playlist") {
                         CreatePlaylistScreen(
+                            likedTracksViewModel = likedTracksViewModel,
                             onNavigateBack = { profileNavController.popBackStack() },
-                            onNavigateToPlaylist = { playlistId ->
-                                profileNavController.navigate("view_playlist/$playlistId") {
-                                    popUpTo("profile_screen") { inclusive = false }
-                                }
-                            }
+//                            onNavigateToPlaylist = { playlistId ->
+//                                profileNavController.navigate("view_playlist/$playlistId") {
+//                                    popUpTo("profile_screen") { inclusive = false }
+//                                }
+//                            }
                         )
                     }
 
                     composable("view_playlist/{playlistId}") { backStackEntry ->
                         val playlistId = backStackEntry.arguments?.getString("playlistId") ?: ""
                         ViewPlaylistScreen(
+                            likedTracksViewModel = likedTracksViewModel,
                             playlistId = playlistId,
                             onNavigateBack = { profileNavController.popBackStack() },
+                            onTrackClick = { trackId ->
+                                val track = likedTracksViewModel.getTrackByIdSync(trackId)
+                                track?.let { likedTracksViewModel.playTrack(it, "Playlist") }
+                            }
                         )
                     }
                 }
             }
+//            composable("player_screen") {
+//                currentTrack?.let { track ->
+//                    PlayerScreen(
+//                        track = track,
+//                        isPlaying = isPlaying,
+//                        onPlayClick = { likedTracksViewModel.togglePlayPause(likedTracksViewModel.currentSourcePage.value ?: "Unknown") },
+//                        onTrackClick = { likedTracksViewModel.playTrack(track, likedTracksViewModel.currentSourcePage.value ?: "Unknown") },
+//                        onNextClick = { likedTracksViewModel.skipToNextTrack() },
+//                        onPreviousClick = { likedTracksViewModel.skipToPreviousTrack() },
+//                        onBackClick = { navController.popBackStack() }
+//                    )
+//                }
+//            }
         }
     }
 }
 
-// Sealed class to define bottom navigation items
+
 sealed class BottomNavItem(val route: String, val label: String, val icon: ImageVector) {
     data object Search : BottomNavItem("search", "пошук", Icons.Filled.Search)
     data object Favourite : BottomNavItem("favourite", "вподобане", Icons.Filled.Favorite)
@@ -241,16 +246,20 @@ fun BottomTrackBar(
     track: Track,
     isPlaying: Boolean,
     onPlayClick: () -> Unit,
+    onNavigateToPlayer: () -> Unit,
     onTrackClick: () -> Unit,
     onNextClick: () -> Unit,
-    onPreviousClick: () -> Unit
+    onPreviousClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.DarkGray)
             .padding(16.dp)
-            .clickable { onTrackClick() },
+            .clickable {
+                onNavigateToPlayer()
+                onTrackClick()
+                 },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -273,7 +282,7 @@ fun BottomTrackBar(
                 fontSize = 16.sp
             )
             Text(
-                text = track.artist,
+                text = track.artist_id.toString(),
                 color = Color.White,
                 fontSize = 14.sp
             )
@@ -288,7 +297,7 @@ fun BottomTrackBar(
             }
             IconButton(onClick = onPlayClick) {
                 Icon(
-                    imageVector = if (isPlaying) Icons.Outlined.PlayArrow else Icons.Default.PlayArrow,
+                    imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (isPlaying) "Pause Icon" else "Play Icon",
                     tint = Color.White)
             }

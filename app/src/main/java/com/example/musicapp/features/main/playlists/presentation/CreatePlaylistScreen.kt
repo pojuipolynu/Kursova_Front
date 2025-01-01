@@ -67,7 +67,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreatePlaylistScreen(
-    likedTracksViewModel: LikedTracksViewModel = hiltViewModel(),
+    likedTracksViewModel: LikedTracksViewModel,
     authViewModel: AuthViewModel = hiltViewModel(),
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
@@ -220,7 +220,7 @@ fun AddTrackRow(
             )
 
             Text(
-                text = track.artist,
+                text = track.artist_id.toString(),
                 color = White80,
                 style = MaterialTheme.typography.labelSmall
             )

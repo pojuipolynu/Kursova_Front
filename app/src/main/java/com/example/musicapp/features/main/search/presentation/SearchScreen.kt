@@ -25,11 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.musicapp.components.HeaderComponent
-import com.example.musicapp.features.main.BottomTrackBar
 import com.example.musicapp.features.main.likedtracks.data.Track
 import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
 import com.example.musicapp.ui.theme.Black80
-import com.example.musicapp.ui.theme.Black90
 import com.example.musicapp.ui.theme.Red60
 import com.example.musicapp.ui.theme.White80
 
@@ -37,7 +35,7 @@ import com.example.musicapp.ui.theme.White80
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
-    likedTracksViewModel: LikedTracksViewModel = hiltViewModel(),
+    likedTracksViewModel: LikedTracksViewModel,
     onTrackClick: (String) -> Unit,
     userId: String,
 ) {
@@ -101,7 +99,7 @@ fun SearchScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(filteredTracks) { track ->
-                    val isLiked = likedTracksState.likedTrackIds.contains(track.id.toString()) // Check if track is liked
+                    val isLiked = likedTracksState.likedTrackIds.contains(track.id.toString())
                     TrackRow(
                         track = track,
                         isLiked = isLiked,
@@ -152,7 +150,7 @@ fun TrackRow(
             )
 
             Text(
-                text = track.artist,
+                text = track.artist_id.toString(),
                 color = White80,
                 style = MaterialTheme.typography.labelSmall
             )

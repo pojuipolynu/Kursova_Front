@@ -22,7 +22,7 @@ import com.example.musicapp.features.main.search.presentation.TrackRow
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouriteScreen(
-    likedTracksViewModel: LikedTracksViewModel = hiltViewModel(),
+    likedTracksViewModel: LikedTracksViewModel,
     userId: String,
     onTrackClick: (String) -> Unit
 ) {

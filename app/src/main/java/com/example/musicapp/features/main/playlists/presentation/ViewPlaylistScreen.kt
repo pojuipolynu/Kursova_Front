@@ -53,7 +53,7 @@ import com.example.musicapp.features.main.search.presentation.TrackRow
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ViewPlaylistScreen(
-    likedTracksViewModel: LikedTracksViewModel = hiltViewModel(),
+    likedTracksViewModel: LikedTracksViewModel,
     playlistViewModel: PlaylistViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
     playlistId: String,

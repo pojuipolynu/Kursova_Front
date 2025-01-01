@@ -108,7 +108,8 @@ data class Track(
     val id: String,
     val imageUrl: String,
     val title: String,
-    val artist: String,
+    val artist_id: Int,
+    val album_id: Int,
     val duration: String,
     val fileUrl: String
 )

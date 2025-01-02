@@ -20,6 +20,8 @@ import com.example.musicapp.features.main.album.data.AlbumRepository
 import com.example.musicapp.features.main.artist.data.Artist
 import com.example.musicapp.features.main.artist.data.ArtistRepository
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.asStateFlow
+
 
 
 @Singleton
@@ -99,19 +101,8 @@ class LikedTracksViewModel @Inject constructor(
     private val _filteredTracks = MutableStateFlow<List<Track>>(emptyList())
     val filteredTracks: StateFlow<List<Track>> = _filteredTracks
 
-    private val _playlistTracks = MutableStateFlow<List<Track>>(emptyList())
-    val playlistTracks: StateFlow<List<Track>> = _playlistTracks
-
     private val _searchResults = MutableStateFlow<List<Track>>(emptyList())
     val searchResults: StateFlow<List<Track>> = _searchResults
-
-    private val _currentSourcePage = MutableStateFlow<String?>(null)
-    val currentSourcePage: StateFlow<String?> = _currentSourcePage
-
-    private val _currentPlaylistPage = MutableStateFlow<String>("")
-    val currentPlaylistPage: StateFlow<String> = _currentPlaylistPage
-
-    private var currentLikedTrackIndex: Int? = null
 
     private val _filteredArtist = MutableStateFlow<List<Artist>>(emptyList())
     val filteredArtist: StateFlow<List<Artist>> = _filteredArtist
@@ -125,6 +116,19 @@ class LikedTracksViewModel @Inject constructor(
     private val _albumSearchResults = MutableStateFlow<List<Album>>(emptyList())
     val albumSearchResults: StateFlow<List<Album>> = _albumSearchResults
 
+    private val _playlistTracks = MutableStateFlow<List<Track>>(emptyList())
+    val playlistTracks: StateFlow<List<Track>> = _playlistTracks
+
+    private val _currentSourcePage = MutableStateFlow<String?>(null)
+    val currentSourcePage: StateFlow<String?> = _currentSourcePage
+
+    private val _currentPlaylistPage = MutableStateFlow<String>("")
+    val currentPlaylistPage: StateFlow<String> = _currentPlaylistPage
+
+    private var currentLikedTrackIndex: Int? = null
+
+    private var currentPlaylistTrackIndex: Int? = null
+
     fun setCurrentSourcePage(page: String) {
         _currentSourcePage.value = page
     }
@@ -133,6 +137,9 @@ class LikedTracksViewModel @Inject constructor(
         _currentPlaylistPage.value = id
     }
 
+    fun setCurrentPlaylistTracks(tracks:List<Track>) {
+        _playlistTracks.value = tracks
+    }
 
     fun updateCurrentLikedTrackIndex(trackId:String) {
         currentLikedTrackIndex = _likedTracksState.value.tracks.indexOfFirst {
@@ -142,6 +149,13 @@ class LikedTracksViewModel @Inject constructor(
             Log.e("LikedTracksViewModel", "Track not found in liked tracks.")
             Log.e("LikedTracksViewModel", "${_likedTracksState.value.tracks}")
             currentLikedTrackIndex = null
+        }
+    }
+
+    fun updateCurrentPlaylistTrackIndex(trackId:String) {
+        currentPlaylistTrackIndex = _playlistTracks.value.indexOfFirst { it.id == trackId }
+        if (currentPlaylistTrackIndex == -1) {
+            currentPlaylistTrackIndex = null
         }
     }
 
@@ -160,11 +174,6 @@ class LikedTracksViewModel @Inject constructor(
         }
     }
 
-    fun loadPlaylistTracks() {
-        viewModelScope.launch {
-           val tracks = playlistRepository.getPlaylistTracksFlow(_currentPlaylistPage.value)
-        }
-    }
 
     fun loadFavourites(userId: String) {
         viewModelScope.launch {
@@ -326,13 +335,15 @@ class LikedTracksViewModel @Inject constructor(
                 if (sourcePage == "Favourite") {
                     updateCurrentLikedTrackIndex(track.id)
                 }
+                if (sourcePage == "Playlist") {
+                    updateCurrentPlaylistTrackIndex(track.id)
+                }
                 mediaPlayerManager.play(track.fileUrl) {
                     playNextTrack()
                 }
                 _currentTrack.emit(track)
                 _isPlaying.emit(true)
                 _currentSourcePage.emit(sourcePage)
-                startUpdatingPosition()
 
             } else if (!_isPlaying.value) {
                 mediaPlayerManager.resume()
@@ -340,16 +351,6 @@ class LikedTracksViewModel @Inject constructor(
             }
         }
     }
-
-    private fun startUpdatingPosition() {
-        viewModelScope.launch {
-            while (_isPlaying.value) {
-                _currentPosition.value = mediaPlayerManager.getCurrentPosition()
-                delay(1000)  // Оновлюємо позицію кожну секунду
-            }
-        }
-    }
-
 
     private fun playNextFavouriteTrack() {
         if (currentLikedTrackIndex != null) {
@@ -370,9 +371,29 @@ class LikedTracksViewModel @Inject constructor(
         }
     }
 
+    private fun playNextPlaylistTrack() {
+        if (currentPlaylistTrackIndex != null) {
+            val nextIndex = currentPlaylistTrackIndex!! + 1
+            val tracks = _playlistTracks.value
+            if (nextIndex in tracks.indices) {
+                val nextTrack = tracks[nextIndex]
+                Log.d("LikedTracksViewModel", "Playing next favourite track: $nextTrack")
+                playTrack(nextTrack, "Playlist")
+            } else {
+                Log.d("LikedTracksViewModel", "End of favourite tracks. Stopping playback.")
+                _isPlaying.value = false
+                _currentTrack.value = null
+                mediaPlayerManager.pause()
+            }
+        } else {
+            Log.e("LikedTracksViewModel", "Current playlist track index is null. ${_playlistTracks.value}")
+        }
+    }
+
     private fun playNextTrack() {
         when (_currentSourcePage.value) {
             "Favourite" -> playNextFavouriteTrack()
+            "Playlist" -> playNextPlaylistTrack()
             else -> {
                 val currentIndex = _filteredTracks.value.indexOfFirst { it.id == _currentTrack.value?.id }
                 if (currentIndex != -1 && currentIndex + 1 < _filteredTracks.value.size) {
@@ -383,6 +404,15 @@ class LikedTracksViewModel @Inject constructor(
                     _currentTrack.value = null
                     mediaPlayerManager.pause()
                 }
+            }
+        }
+    }
+
+    private fun startUpdatingPosition() {
+        viewModelScope.launch {
+            while (_isPlaying.value) {
+                _currentPosition.value = mediaPlayerManager.getCurrentPosition()
+                delay(1000)  // Оновлюємо позицію кожну секунду
             }
         }
     }
@@ -417,9 +447,26 @@ class LikedTracksViewModel @Inject constructor(
         }
     }
 
+    private fun playPreviousPlaylistTrack() {
+        if (currentPlaylistTrackIndex != null) {
+            val previousIndex = currentPlaylistTrackIndex!! - 1
+            val tracks = _playlistTracks.value
+            if (previousIndex in tracks.indices) {
+                val previousTrack = tracks[previousIndex]
+                Log.d("LikedTracksViewModel", "Playing previous favourite track: $previousTrack")
+                playTrack(previousTrack, "Playlist")
+            } else {
+                Log.d("LikedTracksViewModel", "Start of favourite tracks.")
+            }
+        } else {
+            Log.e("LikedTracksViewModel", "Current playlist track index is null.")
+        }
+    }
+
     private fun playPreviousTrack() {
         when (_currentSourcePage.value) {
             "Favourite" -> playPreviousFavouriteTrack()
+            "Playlist" -> playPreviousPlaylistTrack()
             else -> {
                 val currentIndex = _filteredTracks.value.indexOfFirst { it.id == _currentTrack.value?.id }
                 if (currentIndex != -1 && currentIndex - 1 >= 0) {

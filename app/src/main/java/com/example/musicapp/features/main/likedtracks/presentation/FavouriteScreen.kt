@@ -31,7 +31,7 @@ fun FavouriteScreen(
     LaunchedEffect(Unit) {
         Log.d("FavouriteScreen", "Loading favourites")
         likedTracksViewModel.loadFavourites(userId)
-        likedTracksViewModel.setCurrentSourcePage("Favourite")
+//        likedTracksViewModel.setCurrentSourcePage("Favourite")
     }
 
     Box(
@@ -56,6 +56,7 @@ fun FavouriteScreen(
                         isLiked = likedTracksState.likedTrackIds.contains(track.id.toString()),
                         onLikeClick = { likedTracksViewModel.toggleLike(userId, track.id) },
                         onTrackClick = {
+                            likedTracksViewModel.setCurrentSourcePage("Favourite")
                             likedTracksViewModel.playTrack(
                                 track,
                                 "Favourite"

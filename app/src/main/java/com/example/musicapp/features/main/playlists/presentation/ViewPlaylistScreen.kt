@@ -62,6 +62,7 @@ fun ViewPlaylistScreen(
 ) {
     val playlistTracks by playlistViewModel.getPlaylistTracks(playlistId)
         .collectAsState(initial = emptyList())
+    likedTracksViewModel.setCurrentPlaylistTracks(playlistTracks)
     val allTracks by playlistViewModel.allTracks.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val playlistName = remember { mutableStateOf("") }
@@ -72,16 +73,14 @@ fun ViewPlaylistScreen(
                 playlistName.value = playlistViewModel.getPlaylistName(userId, playlistId)
             }
         }
+//        likedTracksViewModel.setCurrentSourcePage("Playlist")
+        likedTracksViewModel.setCurrentPlaylistPage(playlistId)
     }
 
     val editingMode = remember { mutableStateOf(false) }
 
     val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
 
-    LaunchedEffect(Unit) {
-        //МОК ТРЕБА ЗАМІНИТИ
-        likedTracksViewModel.loadFavourites("1")
-    }
 
     Box(
         modifier = Modifier
@@ -107,6 +106,7 @@ fun ViewPlaylistScreen(
                             isLiked = isLiked,
                             onLikeClick = { likedTracksViewModel.toggleLike("1", track.id) },
                             onTrackClick = {
+                                likedTracksViewModel.setCurrentSourcePage("Playlist")
                                 likedTracksViewModel.playTrack(track, "Playlist")
                                 onTrackClick(track.id)
                             }
@@ -123,6 +123,7 @@ fun ViewPlaylistScreen(
                             isLiked = isLiked,
                             onLikeClick = { likedTracksViewModel.toggleLike("1", track.id) },
                             onTrackClick = {
+                                likedTracksViewModel.setCurrentSourcePage("Playlist")
                                 likedTracksViewModel.playTrack(track, "Playlist")
                                 onTrackClick(track.id)
                             }

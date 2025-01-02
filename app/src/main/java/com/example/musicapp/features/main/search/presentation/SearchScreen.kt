@@ -66,7 +66,7 @@ fun SearchScreen(
     LaunchedEffect(Unit) {
         likedTracksViewModel.loadTracks()
         likedTracksViewModel.loadLikedTrackIds(userId)
-        likedTracksViewModel.setCurrentSourcePage("Search")
+//        likedTracksViewModel.setCurrentSourcePage("Search")
     }
 
     Box(
@@ -159,6 +159,7 @@ fun SearchScreen(
                                 isLiked = isLiked,
                                 onLikeClick = { likedTracksViewModel.toggleLike(userId, track.id) },
                                 onTrackClick = {
+                                    likedTracksViewModel.setCurrentSourcePage("Search")
                                     likedTracksViewModel.playTrack(track, "Search")
                                     onTrackClick(track.id)
                                 }

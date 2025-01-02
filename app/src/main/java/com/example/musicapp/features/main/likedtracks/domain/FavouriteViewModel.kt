@@ -14,6 +14,10 @@ import android.media.MediaPlayer
 import javax.inject.Singleton
 import kotlinx.coroutines.runBlocking
 import android.util.Log
+import com.example.musicapp.features.main.album.data.Album
+import com.example.musicapp.features.main.album.data.AlbumRepository
+import com.example.musicapp.features.main.artist.data.Artist
+import com.example.musicapp.features.main.artist.data.ArtistRepository
 import kotlinx.coroutines.delay
 
 
@@ -71,7 +75,9 @@ class MediaPlayerManager @Inject constructor() {
 class LikedTracksViewModel @Inject constructor(
     private val likedTracksRepository: LikedTracksRepository,
     private val mediaPlayerManager: MediaPlayerManager,
-    private val playlistRepository: PlaylistRepository
+    private val playlistRepository: PlaylistRepository,
+    private val artistRepository: ArtistRepository,
+    private val albumRepository: AlbumRepository
 ) : ViewModel() {
 
     private val _likedTracksState = MutableStateFlow(LikedTracksState(emptyList(), emptySet()))
@@ -105,6 +111,18 @@ class LikedTracksViewModel @Inject constructor(
     val currentPlaylistPage: StateFlow<String> = _currentPlaylistPage
 
     private var currentLikedTrackIndex: Int? = null
+
+    private val _filteredArtist = MutableStateFlow<List<Artist>>(emptyList())
+    val filteredArtist: StateFlow<List<Artist>> = _filteredArtist
+
+    private val _artistSearchResults = MutableStateFlow<List<Artist>>(emptyList())
+    val artistSearchResults: StateFlow<List<Artist>> = _artistSearchResults
+
+    private val _filteredAlbums = MutableStateFlow<List<Album>>(emptyList())
+    val filteredAlbums: StateFlow<List<Album>> = _filteredAlbums
+
+    private val _albumSearchResults = MutableStateFlow<List<Album>>(emptyList())
+    val albumSearchResults: StateFlow<List<Album>> = _albumSearchResults
 
     fun setCurrentSourcePage(page: String) {
         _currentSourcePage.value = page
@@ -171,7 +189,6 @@ class LikedTracksViewModel @Inject constructor(
         }
     }
 
-
     fun searchTracks(query: String) {
         viewModelScope.launch {
             try {
@@ -183,22 +200,87 @@ class LikedTracksViewModel @Inject constructor(
         }
     }
 
-
-    fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
-        filterTracks()
+    // artists
+    fun loadArtists() {
+        viewModelScope.launch {
+            val artists = artistRepository.getArtists()
+            _filteredArtist.value = artists
+        }
     }
 
-    fun filterTracks() {
+    suspend fun getArtistById(artistId: String): Artist? {
+        return artistRepository.getArtistById(artistId)
+    }
+
+
+    fun searchArtists(query: String) {
         viewModelScope.launch {
-            val allTracks = likedTracksRepository.getTracks()
-            _filteredTracks.value = allTracks.filter {
-                it.title.contains(_searchQuery.value, ignoreCase = true) ||
-                        it.artist_id.toString().contains(_searchQuery.value, ignoreCase = true)
+            try {
+                    val searchResults = artistRepository.searchArtists(query)
+                    _artistSearchResults.value = searchResults // Оновіть стан пошук
+            } catch (e: Exception) {
+                Log.e("LikedTracksViewModel", "Error searching tracks: ${e.message}")
             }
         }
     }
 
+
+    // albums
+
+    fun loadAlbums() {
+        viewModelScope.launch {
+            val albums = albumRepository.getAlbums()
+            _filteredAlbums.value = albums
+        }
+    }
+
+    suspend fun getAlbumById(albumId: String): Album? {
+        return albumRepository.getAlbumById(albumId)
+    }
+
+    fun searchAlbums(query: String) {
+        viewModelScope.launch {
+            try {
+                val searchResults = albumRepository.searchAlbums(query)
+                _albumSearchResults.value = searchResults // Оновіть стан пошуку
+            } catch (e: Exception) {
+                Log.e("LikedTracksViewModel", "Error searching albums: ${e.message}")
+            }
+        }
+    }
+
+
+    fun updateSearchQuery(query: String, category: String) {
+        _searchQuery.value = query
+        filterTracks(category) // Передаємо категорію для фільтрації
+    }
+
+    fun filterTracks(category: String) {
+        viewModelScope.launch {
+            when (category) {
+                "songs" -> {
+                    val allTracks = likedTracksRepository.getTracks()
+                    _filteredTracks.value = allTracks.filter {
+                        it.title.contains(_searchQuery.value, ignoreCase = true) ||
+                                it.artist_id.toString().contains(_searchQuery.value, ignoreCase = true)
+                    }
+                }
+                "albums" -> {
+                    val allAlbums = albumRepository.getAlbums() // Передбачається, що є метод для отримання альбомів
+                    _filteredAlbums.value = allAlbums.filter {
+                        it.title.contains(_searchQuery.value, ignoreCase = true) ||
+                                it.artist_id.toString().contains(_searchQuery.value, ignoreCase = true)
+                    }
+                }
+                "artists" -> {
+                    val allArtists = artistRepository.getArtists() // Передбачається, що є метод для отримання виконавців
+                    _filteredArtist.value = allArtists.filter {
+                        it.name.contains(_searchQuery.value, ignoreCase = true)
+                    }
+                }
+            }
+        }
+    }
 
 
 

@@ -177,6 +177,12 @@ fun MainAppScreen(
                     onTrackClick = { trackId ->
                         val track = likedTracksViewModel.getTrackByIdSync(trackId)
                         track?.let { likedTracksViewModel.playTrack(it, "Search") }
+                    },
+                    onArtistClick = { artistId ->
+                        savedStateHandle?.set("artist_id", artistId)
+                    },
+                    onAlbumClick = { albumId ->
+                        bottomNavController.navigate("album_screen/$albumId")
                     }
                 )
             }

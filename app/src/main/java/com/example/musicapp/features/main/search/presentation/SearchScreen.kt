@@ -50,6 +50,8 @@ import com.example.musicapp.features.main.artist.data.Artist
 fun SearchScreen(
     likedTracksViewModel: LikedTracksViewModel,
     onTrackClick: (String) -> Unit,
+    onArtistClick: (String) -> Unit,
+    onAlbumClick: (String) -> Unit,
     userId: String,
 ) {
 
@@ -169,7 +171,7 @@ fun SearchScreen(
                             ArtistRow(
                                 artist = artist,
                                 onArtistClick = {
-                                    // Логіка для взаємодії з виконавцем
+                                    onArtistClick(artist.id)
                                     println("Clicked artist: ${artist.name}")
                                 }
                             )
@@ -180,7 +182,7 @@ fun SearchScreen(
                             AlbumRow(
                                 album = album,
                                 onAlbumClick = {
-                                    // Логіка для взаємодії з альбомом
+                                    onAlbumClick(album.id.toString())
                                     println("Clicked album: ${album.title}")
                                 }
                             )
@@ -278,7 +280,7 @@ fun ActionButton(
 //            handleCategoryAction(category, likedTracksViewModel, userId)
             },
         colors = if (isSelected)
-                ButtonDefaults.buttonColors(containerColor = Color(0xFF9C3E3E))
+                ButtonDefaults.buttonColors(containerColor = Red60)
             else
                 ButtonDefaults.buttonColors(containerColor = Color.Transparent),
         modifier = Modifier
@@ -286,8 +288,10 @@ fun ActionButton(
             .padding(horizontal = 8.dp),
         shape = RoundedCornerShape(4.dp)
     ) {
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = text, color = Color.White, fontSize = 14.sp)
+        Text(
+            text = text,
+            color = White80,
+            style = MaterialTheme.typography.labelSmall)
     }
 }
 

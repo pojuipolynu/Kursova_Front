@@ -67,13 +67,7 @@ fun SearchScreen(
     LaunchedEffect(Unit) {
         likedTracksViewModel.loadTracks()
         likedTracksViewModel.loadLikedTrackIds(userId)
-<<<<<<< HEAD
-//        likedTracksViewModel.setCurrentSourcePage("Search")
-=======
-        likedTracksViewModel.loadArtists()
-        likedTracksViewModel.loadAlbums()
-        likedTracksViewModel.setCurrentSourcePage("Search")
->>>>>>> f00ba5a24428241a3a88e288bbc6015549c35235
+
     }
 
     Box(

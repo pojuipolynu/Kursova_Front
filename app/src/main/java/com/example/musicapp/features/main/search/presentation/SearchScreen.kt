@@ -60,12 +60,15 @@ fun SearchScreen(
     val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
     val searchQuery by likedTracksViewModel.searchQuery.collectAsState()
     val filteredTracks by likedTracksViewModel.filteredTracks.collectAsState()
-    val filteredArtist by likedTracksViewModel.artistSearchResults.collectAsState()
-    val filteredAlbum by likedTracksViewModel.albumSearchResults.collectAsState()
+    val filteredArtist by likedTracksViewModel.filteredArtist.collectAsState()
+    val filteredAlbum by likedTracksViewModel.filteredAlbums.collectAsState()
+    val artistImages by likedTracksViewModel.artistImages.collectAsState()
 
     LaunchedEffect(Unit) {
         likedTracksViewModel.loadTracks()
         likedTracksViewModel.loadLikedTrackIds(userId)
+        likedTracksViewModel.loadArtists()
+        likedTracksViewModel.loadAlbums()
         likedTracksViewModel.setCurrentSourcePage("Search")
     }
 
@@ -85,11 +88,19 @@ fun SearchScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { query ->
-                    likedTracksViewModel.updateSearchQuery(query, selectedCategory.value) // Передаємо категорію
+                    likedTracksViewModel.updateSearchQuery(query) // Передаємо категорію
                     when (selectedCategory.value) {
-                        "songs" -> likedTracksViewModel.searchTracks(query)
-                        "albums" -> likedTracksViewModel.searchAlbums(query)
-                        "artists" -> likedTracksViewModel.searchArtists(query)
+                        "songs" -> {
+                            likedTracksViewModel.filterTracks()
+                            likedTracksViewModel.searchTracks(query)}
+                        "albums" -> {
+                            likedTracksViewModel.filterAlbums()
+                            likedTracksViewModel.searchAlbums(query)
+                        }
+                        "artists" -> {
+                            likedTracksViewModel.filterArtists()
+                            likedTracksViewModel.searchArtists(query)
+                        }
                     }
                 },
                 placeholder = {
@@ -111,7 +122,7 @@ fun SearchScreen(
                         imageVector = Icons.Default.Search,
                         contentDescription = "Search Icon",
                         tint = White80,
-                        modifier = Modifier.clickable { likedTracksViewModel.filterTracks(selectedCategory.value) }
+                        modifier = Modifier.clickable { likedTracksViewModel.filterComponents(selectedCategory.value) }
                     )
                 }
             )
@@ -127,21 +138,21 @@ fun SearchScreen(
                     "songs",
                     selectedCategory.value,
                     { selectedCategory.value = it },
-//                    likedTracksViewModel,
-//                    userId
+                    likedTracksViewModel,
+                    userId
                 )
                 ActionButton("Альбоми",
                     "albums",selectedCategory.value,
                     { selectedCategory.value = it },
-//                    likedTracksViewModel,
-//                    userId
+                    likedTracksViewModel,
+                    userId
                 )
                 ActionButton("Виконавці",
                     "artists",
                     selectedCategory.value,
                     { selectedCategory.value = it },
-//                    likedTracksViewModel,
-//                    userId
+                    likedTracksViewModel,
+                    userId
                 )
             }
 
@@ -179,8 +190,14 @@ fun SearchScreen(
                     }
                     "albums" -> {
                         items(filteredAlbum) { album ->
+                            LaunchedEffect(album.id) {
+                                if (!artistImages.containsKey(album.id.toString())) {
+                                    likedTracksViewModel.loadArtistImageByAlbumId(album.id.toString())
+                                }}
                             AlbumRow(
+
                                 album = album,
+                                imageUrl = artistImages[album.id.toString()],
                                 onAlbumClick = {
                                     onAlbumClick(album.id.toString())
                                     println("Clicked album: ${album.title}")
@@ -195,24 +212,24 @@ fun SearchScreen(
     }
 }
 
-//fun handleCategoryAction(
-//    category: String,
-//    likedTracksViewModel: LikedTracksViewModel,
-//    userId: String
-//) {
-//    when (category) {
-//        "songs" -> {
-//            likedTracksViewModel.loadTracks()
-//            likedTracksViewModel.loadLikedTrackIds(userId)
-//        }
-//        "albums" -> {
-//            likedTracksViewModel.loadAlbums()
-//        }
-//        "artists" -> {
-//            likedTracksViewModel.loadArtists()
-//        }
-//    }
-//}
+fun handleCategoryAction(
+    category: String,
+    likedTracksViewModel: LikedTracksViewModel,
+    userId: String
+) {
+    when (category) {
+        "songs" -> {
+            likedTracksViewModel.loadTracks()
+            likedTracksViewModel.loadLikedTrackIds(userId)
+        }
+        "albums" -> {
+            likedTracksViewModel.loadAlbums()
+        }
+        "artists" -> {
+            likedTracksViewModel.loadArtists()
+        }
+    }
+}
 
 
 @Composable
@@ -271,13 +288,13 @@ fun ActionButton(
     category: String,
     selectedCategory: String,
     onCategorySelected: (String) -> Unit,
-//    likedTracksViewModel: LikedTracksViewModel,
-//    userId: String
+    likedTracksViewModel: LikedTracksViewModel,
+    userId: String
 ) {
     val isSelected = category == selectedCategory
     Button(
         onClick = { onCategorySelected(category)
-//            handleCategoryAction(category, likedTracksViewModel, userId)
+            handleCategoryAction(category, likedTracksViewModel, userId)
             },
         colors = if (isSelected)
                 ButtonDefaults.buttonColors(containerColor = Red60)
@@ -299,6 +316,7 @@ fun ActionButton(
 @Composable
 fun AlbumRow(
     album: Album,
+    imageUrl: String?,
     onAlbumClick: () -> Unit
 ) {
     Row(
@@ -309,8 +327,8 @@ fun AlbumRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = rememberAsyncImagePainter(model = "https://music-app-file.s3.eu-central-003.backblazeb2.com/covers/a3896979361_65.jpg"),
-//            painter = rememberAsyncImagePainter(model = album.imageUrl),
+//            painter = rememberAsyncImagePainter(model = "https://music-app-file.s3.eu-central-003.backblazeb2.com/covers/a3896979361_65.jpg"),
+            painter = rememberAsyncImagePainter(model = imageUrl),
             contentDescription = "Album Image",
             modifier = Modifier
                 .size(60.dp)

@@ -1,9 +1,11 @@
 package com.example.musicapp.api
 
+import com.example.musicapp.features.main.album.data.Album
 import com.example.musicapp.features.main.likedtracks.data.Track
 import com.example.musicapp.features.main.playlists.data.CreatePlaylistRequest
 import com.example.musicapp.features.main.profile.data.User
 import com.example.musicapp.features.main.profile.data.Playlist
+import com.example.musicapp.features.main.artist.data.Artist
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.DELETE
@@ -54,6 +56,14 @@ data class SearchResponse(
 data class UserStatusResponse(
     @SerializedName("status") val status: String,
     @SerializedName("user_id") val userId: String
+)
+
+data class ArtistsResponse(
+    @SerializedName("artists") val artists: List<Artist>
+)
+
+data class AlbumsResponse(
+    @SerializedName("albums") val albums: List<Album>
 )
 
 
@@ -136,6 +146,29 @@ interface ApiService {
         @Path("user_id") userId: String,
         @Path("song_id") songId: String
     )
+
+    // artists
+    @GET("other/artists")
+    suspend fun getArtists(): ArtistsResponse
+
+    @GET("other/artists/search/{artistId}")
+    suspend fun getArtistById(@Path("artistId") artistId: String): Artist
+
+    @GET("other/artists/search_name/{query}")
+    suspend fun searchArtists(@Path("query") query: String): ArtistsResponse
+
+
+    // albums
+    @GET("other/albums")
+    suspend fun getAlbums(): AlbumsResponse
+
+    @GET("/other/albums/search/{albumId}")
+    suspend fun getAlbumById(@Path("albumId") albumId: String): Album
+
+    @GET("/other/albums/search_name/{query}")
+    suspend fun searchAlbums(@Path("query") query: String): AlbumsResponse
+
+
 }
 
 

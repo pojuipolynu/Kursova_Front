@@ -35,7 +35,8 @@ import com.example.musicapp.ui.theme.White80
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.border
-import com.example.musicapp.features.main.album.data.Album
+import com.example.musicapp.api.Album
+//import com.example.musicapp.features.main.album.data.Album
 import com.example.musicapp.features.main.artist.data.Artist
 
 //
@@ -231,10 +232,10 @@ fun TrackRow(
             contentDescription = "Track Image",
             modifier = Modifier
                 .size(60.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .padding(end = 8.dp),
+                .clip(RoundedCornerShape(4.dp)),
             contentScale = ContentScale.Fit
         )
+        Spacer(modifier =Modifier.width(8.dp))
         Column(
             modifier = Modifier.weight(1f)
         ) {
@@ -245,7 +246,7 @@ fun TrackRow(
             )
 
             Text(
-                text = track.artist_id.toString(),
+                text = track.artist,
                 color = White80,
                 style = MaterialTheme.typography.labelSmall
             )
@@ -256,7 +257,7 @@ fun TrackRow(
             Icon(
                 imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                 contentDescription = if (isLiked) "Unlike" else "Like",
-                tint = if (isLiked) Color.Red else Color.Gray
+                tint = if (isLiked) Red60 else Color.Gray
             )
         }
     }
@@ -323,7 +324,7 @@ fun AlbumRow(
             )
 
             Text(
-                text = album.artist_id.toString(),
+                text = album.artistId.toString(),
                 color = White80,
                 style = MaterialTheme.typography.labelSmall
             )

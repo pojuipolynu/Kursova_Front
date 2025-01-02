@@ -16,21 +16,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -41,41 +46,34 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.musicapp.features.main.likedtracks.data.Track
+import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
 import com.example.musicapp.ui.theme.Black80
+import com.example.musicapp.ui.theme.Red60
 import com.example.musicapp.ui.theme.White80
 
 @SuppressLint("ServiceCast")
 @Composable
 fun PlayerScreen(
+    likedTracksViewModel: LikedTracksViewModel,
+    userId: String,
     track: Track,
     isPlaying: Boolean,
     currentPosition: Int,
-//    duration: Long,
-//    volume: Float,
     onPlayClick: () -> Unit,
     onTrackClick: () -> Unit,
     onNextClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onSeekTo: (Long) -> Unit,
-//    onVolumeChange: (Float) -> Unit,
+    onArtistClick: (String) -> Unit,
     onBackClick: () -> Unit
 ) {
 
-    val duration = track.duration // Очікується, що це стрінг у форматі "MM:SS"
-    val (minutes, seconds) = duration.split(":").map { it.toInt() }
-    val totalDuration = minutes * 60 + seconds // загальна тривалість у секундах
-
-    // Функція для форматування часу
-    fun formatTime(seconds: Int): String {
-        val min = seconds / 60
-        val sec = seconds % 60
-        return String.format("%02d:%02d", min, sec)
-    }
+    val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
+    val duration = likedTracksViewModel.getDuration()
 
 
     var volume by remember { mutableFloatStateOf(0.5f) }
@@ -84,11 +82,11 @@ fun PlayerScreen(
         volume = newVolume
     }
 
-    // Отримуємо AudioManager для зміни гучності через слайдер
+
     val context = LocalContext.current
     val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
-    // Функція для зміни гучності через слайдер
+
     fun onVolumeChange(newVolume: Float) {
         volume = newVolume
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
@@ -102,7 +100,7 @@ fun PlayerScreen(
             .background(Black80)
             .clickable { onTrackClick() }
     ) {
-        // Top App Bar
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -118,7 +116,7 @@ fun PlayerScreen(
             }
         }
 
-        // Album Cover
+
         Image(
             painter = rememberAsyncImagePainter(model = track.imageUrl),
             contentDescription = "Track Image",
@@ -130,66 +128,93 @@ fun PlayerScreen(
             contentScale = ContentScale.Crop
         )
 
-        // Track Information
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            Text(
-                text = track.title,
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = track.artist_id.toString(),
-                color = Color.Gray,
-                fontSize = 18.sp
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = track.title,
+                        color = White80,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = track.artist,
+                        color = White80.copy(alpha = 0.6f),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.clickable {
+                            onArtistClick(track.artist_id.toString())
+                        }
+                    )
+                }
+
+                IconButton(
+                    onClick = {
+                        likedTracksViewModel.toggleLike(userId, track.id)
+                    }
+                ) {
+                    Icon(
+                        imageVector = if (likedTracksState.likedTrackIds.contains(track.id.toString()))
+                            Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = if (likedTracksState.likedTrackIds.contains(track.id.toString()))
+                            "Unlike" else "Like",
+                        tint = if (likedTracksState.likedTrackIds.contains(track.id.toString())) Red60 else Color.Gray
+                    )
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
 
-        // Progress Bar with time
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-        ) {
+        Spacer(modifier = Modifier.height(8.dp))
+
+
+        Column {
             Slider(
                 value = currentPosition.toFloat(),
-                onValueChange = { onSeekTo(it.toLong()) },
-                valueRange = 0f..totalDuration.toFloat(),
+                valueRange = 0f..duration.toFloat(),
+                onValueChange = { newPosition ->
+                    likedTracksViewModel.seekTo(newPosition.toInt())
+                },
+                modifier = Modifier.fillMaxWidth(0.95f).align(Alignment.CenterHorizontally),
                 colors = SliderDefaults.colors(
-                    thumbColor = Color.Red,
-                    activeTrackColor = Color.Red
-                )
+                    thumbColor = Red60,
+                    activeTrackColor = Red60
+                ),
             )
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = formatTime(currentPosition),
-                    color = Color.Gray,
-                    fontSize = 14.sp
+                    color = White80,
+                    style = MaterialTheme.typography.labelSmall
                 )
                 Text(
-                    text = formatTime(totalDuration - currentPosition),
-                    color = Color.Gray,
-                    fontSize = 14.sp
+                    text = "-${formatTime(duration - currentPosition)}",
+                    color = White80,
+                    style = MaterialTheme.typography.labelSmall
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Control Buttons
+
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp),
+                .fillMaxWidth(0.6f)
+                .padding(horizontal = 32.dp)
+                .align(Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -197,54 +222,63 @@ fun PlayerScreen(
                 Icon(
                     imageVector = Icons.Filled.SkipPrevious,
                     contentDescription = "Previous",
-                    tint = Color.White
+                    tint = White80
                 )
             }
             IconButton(onClick = onPlayClick) {
                 Icon(
+                    modifier = Modifier.size(48.dp),
                     imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = Color.White
+                    tint = White80
                 )
             }
             IconButton(onClick = onNextClick) {
                 Icon(
                     imageVector = Icons.Filled.SkipNext,
                     contentDescription = "Next",
-                    tint = Color.White
+                    tint = White80
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Volume Slider
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth(0.8f)
+                .padding(horizontal = 16.dp)
+                .align(Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = Icons.Default.VolumeDown,
                 contentDescription = "Volume Down",
-                tint = Color.White
+                tint = White80
             )
             Slider(
                 value = volume,
                 onValueChange = { newVolume -> onVolumeChange(newVolume) },
                 valueRange = 0f..1f,
                 colors = SliderDefaults.colors(
-                    thumbColor = Color.Red,
-                    activeTrackColor = Color.Red
+                    thumbColor = Red60,
+                    activeTrackColor = Red60
                 ),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(0.6f)
             )
             Icon(
                 imageVector = Icons.Default.VolumeUp,
                 contentDescription = "Volume Up",
-                tint = Color.White
+                tint = White80
             )
         }
     }
 }
+
+private fun formatTime(milliseconds: Int): String {
+    val minutes = milliseconds / 1000 / 60
+    val seconds = (milliseconds / 1000) % 60
+    return String.format("%02d:%02d", minutes, seconds)
+}
+
+

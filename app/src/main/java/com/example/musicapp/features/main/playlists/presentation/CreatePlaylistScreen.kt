@@ -220,7 +220,7 @@ fun AddTrackRow(
             )
 
             Text(
-                text = track.artist_id.toString(),
+                text = track.artist,
                 color = White80,
                 style = MaterialTheme.typography.labelSmall
             )

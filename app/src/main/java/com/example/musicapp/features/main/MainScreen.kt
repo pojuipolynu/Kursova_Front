@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -51,8 +52,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.musicapp.features.main.artists.domain.ArtistViewModel
+import com.example.musicapp.features.main.artists.presentation.AlbumScreen
+import com.example.musicapp.features.main.artists.presentation.ArtistScreen
 import com.example.musicapp.features.main.likedtracks.data.Track
-import com.example.musicapp.features.main.player.presentation.PlayerScreen
 
 import com.example.musicapp.features.main.playlists.presentation.CreatePlaylistScreen
 import com.example.musicapp.features.main.playlists.presentation.ViewPlaylistScreen
@@ -60,12 +63,12 @@ import com.example.musicapp.features.main.playlists.presentation.ViewPlaylistScr
 
 @Composable
 fun MainAppScreen(
+    authViewModel: AuthViewModel,
     likedTracksViewModel: LikedTracksViewModel,
+    artistViewModel: ArtistViewModel,
     navController: NavController,
 ) {
     val bottomNavController = rememberNavController()
-//    val likedTracksViewModel: LikedTracksViewModel = hiltViewModel()
-    val authViewModel: AuthViewModel = hiltViewModel()
 
     val bottomNavItems = listOf(
         BottomNavItem.Search,
@@ -75,6 +78,23 @@ fun MainAppScreen(
 
     val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
     val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
+
+    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+
+    val artistId = savedStateHandle?.getStateFlow<String?>("artist_id", null)?.collectAsState()
+
+    LaunchedEffect(artistId?.value) {
+        Log.d("MainAppScreenLaunch", "Listening for artist navigation with ID: ${artistId?.value}")
+        artistId?.value?.let { id ->
+            Log.d("MainAppScreenLaunch", "Navigating to artist screen $id")
+            bottomNavController.navigate("artist_screen/$id") {
+                popUpTo(bottomNavController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+            }
+            savedStateHandle.remove<String>("artist_id")
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -86,7 +106,7 @@ fun MainAppScreen(
                         onPlayClick = {
                             likedTracksViewModel.togglePlayPause(likedTracksViewModel.currentSourcePage.value ?: "Unknown")
                         },
-                        onNavigateToPlayer = { navController.navigate("player_screen")},
+                        onNavigateToPlayer = { navController.navigate("player_screen") },
                         onTrackClick = {
                             likedTracksViewModel.playTrack(track, likedTracksViewModel.currentSourcePage.value ?: "Unknown")
                         },
@@ -196,11 +216,6 @@ fun MainAppScreen(
                         CreatePlaylistScreen(
                             likedTracksViewModel = likedTracksViewModel,
                             onNavigateBack = { profileNavController.popBackStack() },
-//                            onNavigateToPlaylist = { playlistId ->
-//                                profileNavController.navigate("view_playlist/$playlistId") {
-//                                    popUpTo("profile_screen") { inclusive = false }
-//                                }
-//                            }
                         )
                     }
 
@@ -218,19 +233,39 @@ fun MainAppScreen(
                     }
                 }
             }
-//            composable("player_screen") {
-//                currentTrack?.let { track ->
-//                    PlayerScreen(
-//                        track = track,
-//                        isPlaying = isPlaying,
-//                        onPlayClick = { likedTracksViewModel.togglePlayPause(likedTracksViewModel.currentSourcePage.value ?: "Unknown") },
-//                        onTrackClick = { likedTracksViewModel.playTrack(track, likedTracksViewModel.currentSourcePage.value ?: "Unknown") },
-//                        onNextClick = { likedTracksViewModel.skipToNextTrack() },
-//                        onPreviousClick = { likedTracksViewModel.skipToPreviousTrack() },
-//                        onBackClick = { navController.popBackStack() }
-//                    )
-//                }
-//            }
+
+            composable("artist_screen/{artistId}") { backStackEntry ->
+                val artistId = backStackEntry.arguments?.getString("artistId") ?: return@composable
+                ArtistScreen(
+                    likedTracksViewModel = likedTracksViewModel,
+                    artistViewModel = artistViewModel,
+                    artistId = artistId,
+                    userId = authViewModel.getCurrentUserId() ?: "1",
+                    onNavigateToAlbum = { albumId ->
+                        bottomNavController.navigate("album_screen/$albumId")
+                    },
+                    onBackClick = { bottomNavController.popBackStack() },
+                    onTrackClick = { trackId ->
+                        val track = likedTracksViewModel.getTrackByIdSync(trackId)
+                        track?.let { likedTracksViewModel.playTrack(it, "Favourite") }
+                    }
+                )
+            }
+
+            composable("album_screen/{albumId}") { backStackEntry ->
+                val albumId = backStackEntry.arguments?.getString("albumId") ?: return@composable
+                AlbumScreen(
+                    likedTracksViewModel = likedTracksViewModel,
+                    artistViewModel = artistViewModel,
+                    albumId = albumId,
+                    userId = authViewModel.getCurrentUserId() ?: "1",
+                    onBackClick = { bottomNavController.popBackStack() },
+                    onTrackClick = { trackId ->
+                        val track = likedTracksViewModel.getTrackByIdSync(trackId)
+                        track?.let { likedTracksViewModel.playTrack(it, "Favourite") }
+                    }
+                )
+            }
         }
     }
 }
@@ -282,7 +317,7 @@ fun BottomTrackBar(
                 fontSize = 16.sp
             )
             Text(
-                text = track.artist_id.toString(),
+                text = track.artist,
                 color = Color.White,
                 fontSize = 14.sp
             )

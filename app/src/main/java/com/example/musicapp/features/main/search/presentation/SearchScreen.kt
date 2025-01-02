@@ -296,7 +296,7 @@ fun AlbumRow(
     album: Album,
     onAlbumClick: () -> Unit
 ) {
-    Row(
+    Row( // finf
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onAlbumClick() }

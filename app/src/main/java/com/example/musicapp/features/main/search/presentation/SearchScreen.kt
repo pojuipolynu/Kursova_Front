@@ -231,10 +231,10 @@ fun TrackRow(
             contentDescription = "Track Image",
             modifier = Modifier
                 .size(60.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .padding(end = 8.dp),
+                .clip(RoundedCornerShape(4.dp)),
             contentScale = ContentScale.Fit
         )
+        Spacer(modifier =Modifier.width(8.dp))
         Column(
             modifier = Modifier.weight(1f)
         ) {
@@ -245,7 +245,7 @@ fun TrackRow(
             )
 
             Text(
-                text = track.artist_id.toString(),
+                text = track.artist,
                 color = White80,
                 style = MaterialTheme.typography.labelSmall
             )
@@ -256,7 +256,7 @@ fun TrackRow(
             Icon(
                 imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                 contentDescription = if (isLiked) "Unlike" else "Like",
-                tint = if (isLiked) Color.Red else Color.Gray
+                tint = if (isLiked) Red60 else Color.Gray
             )
         }
     }

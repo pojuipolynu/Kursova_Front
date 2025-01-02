@@ -3,7 +3,6 @@ package com.example.musicapp.api
 import com.example.musicapp.features.main.album.data.Album
 import com.example.musicapp.features.main.likedtracks.data.Track
 import com.example.musicapp.features.main.playlists.data.CreatePlaylistRequest
-import com.example.musicapp.features.main.profile.data.User
 import com.example.musicapp.features.main.profile.data.Playlist
 import com.example.musicapp.features.main.artist.data.Artist
 import retrofit2.http.GET
@@ -58,12 +57,31 @@ data class UserStatusResponse(
     @SerializedName("user_id") val userId: String
 )
 
+
 data class ArtistsResponse(
     @SerializedName("artists") val artists: List<Artist>
 )
 
+data class ArtistResponse(
+    @SerializedName("name") val name: String,
+    @SerializedName("imageUrl") val imageUrl: String,
+    @SerializedName("id") val id: Int
+)
+
 data class AlbumsResponse(
     @SerializedName("albums") val albums: List<Album>
+)
+
+data class AlbumResponse(
+    @SerializedName("title") val title: String,
+    @SerializedName("artist_id") val artistId: Int,
+    @SerializedName("id") val id: Int
+)
+
+data class Album(
+    @SerializedName("title") val title: String,
+    @SerializedName("artist_id") val artistId: Int,
+    @SerializedName("id") val id: Int
 )
 
 
@@ -169,6 +187,20 @@ interface ApiService {
     suspend fun searchAlbums(@Path("query") query: String): AlbumsResponse
 
 
+    @GET("other/artists/search/{artist_id}")
+    suspend fun getArtistById(@Path("artist_id") artistId: Int): ArtistResponse
+
+    @GET("other/artists/albums/{artist_id}")
+    suspend fun getAlbumsByArtist(@Path("artist_id") artistId: Int): AlbumsResponse
+
+    @GET("other/artists/songs/{artist_id}")
+    suspend fun getSongsByArtist(@Path("artist_id") artistId: Int): SongsResponse
+
+    @GET("/other/albums/search/{album_id}")
+    suspend fun getAlbumById(@Path("album_id") albumId: Int): AlbumResponse
+
+    @GET("other/albums/songs/{album_id}")
+    suspend fun getSongsByAlbum(@Path("album_id") albumId: Int): SongsResponse
 }
 
 

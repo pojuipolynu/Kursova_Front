@@ -14,7 +14,8 @@ import android.media.MediaPlayer
 import javax.inject.Singleton
 import kotlinx.coroutines.runBlocking
 import android.util.Log
-import com.example.musicapp.features.main.album.data.Album
+import com.example.musicapp.api.Album
+//import com.example.musicapp.features.main.album.data.Album
 import com.example.musicapp.features.main.album.data.AlbumRepository
 import com.example.musicapp.features.main.artist.data.Artist
 import com.example.musicapp.features.main.artist.data.ArtistRepository
@@ -269,7 +270,7 @@ class LikedTracksViewModel @Inject constructor(
                     val allAlbums = albumRepository.getAlbums() // Передбачається, що є метод для отримання альбомів
                     _filteredAlbums.value = allAlbums.filter {
                         it.title.contains(_searchQuery.value, ignoreCase = true) ||
-                                it.artist_id.toString().contains(_searchQuery.value, ignoreCase = true)
+                                it.artistId.toString().contains(_searchQuery.value, ignoreCase = true)
                     }
                 }
                 "artists" -> {

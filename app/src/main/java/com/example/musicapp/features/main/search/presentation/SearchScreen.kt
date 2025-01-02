@@ -35,7 +35,8 @@ import com.example.musicapp.ui.theme.White80
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.border
-import com.example.musicapp.features.main.album.data.Album
+import com.example.musicapp.api.Album
+//import com.example.musicapp.features.main.album.data.Album
 import com.example.musicapp.features.main.artist.data.Artist
 
 //
@@ -323,7 +324,7 @@ fun AlbumRow(
             )
 
             Text(
-                text = album.artist_id.toString(),
+                text = album.artistId.toString(),
                 color = White80,
                 style = MaterialTheme.typography.labelSmall
             )

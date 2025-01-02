@@ -1,6 +1,7 @@
 package com.example.musicapp.features.main.album.data
 
 import android.util.Log
+import com.example.musicapp.api.Album
 import com.example.musicapp.api.ApiService
 import javax.inject.Inject
 
@@ -42,9 +43,9 @@ class AlbumRepository @Inject constructor(
 }
 
 
-data class Album(
-    val id: String,
-//    val imageUrl: String,
-    val title: String,
-    val artist_id: Int
-)
+//data class Album(
+//    val id: String,
+////    val imageUrl: String,
+//    val title: String,
+//    val artist_id: Int
+//)

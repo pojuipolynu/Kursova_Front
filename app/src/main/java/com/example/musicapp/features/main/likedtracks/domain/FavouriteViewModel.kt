@@ -162,9 +162,48 @@ class LikedTracksViewModel @Inject constructor(
 
 
 
+    private val _artistImages = MutableStateFlow<Map<String, String>>(emptyMap())
+    val artistImages: StateFlow<Map<String, String>> = _artistImages
+
+
+    suspend fun getArtistImageByAlbumId(albumId: String): String? {
+        return try {
+            // Отримуємо альбом по ID
+            val album = getAlbumById(albumId)
+            if (album != null) {
+                // Отримуємо виконавця по ID виконавця з альбому
+                val artist = getArtistById(album.artistId.toString())
+                // Повертаємо URL зображення виконавця
+                artist?.imageUrl
+            } else {
+                null // Якщо альбом не знайдено
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null // Повертаємо null у разі помилки
+        }
+    }
+
+
+    fun loadArtistImageByAlbumId(albumId: String) {
+        viewModelScope.launch {
+            val imageUrl = getArtistImageByAlbumId(albumId)
+            if (imageUrl != null) {
+                _artistImages.value = _artistImages.value.toMutableMap().apply {
+                    put(albumId, imageUrl)
+                }
+            }
+        }
+    }
+
+
+
+
     init {
         loadTracks()
         loadFavourites(userId="1")
+        loadArtists()
+        loadAlbums()
     }
 
     fun loadTracks() {
@@ -260,34 +299,51 @@ class LikedTracksViewModel @Inject constructor(
     }
 
 
-    fun updateSearchQuery(query: String, category: String) {
+    fun updateSearchQuery(query: String) {
         _searchQuery.value = query
-        filterTracks(category) // Передаємо категорію для фільтрації
+//        filterTracks(category) // Передаємо категорію для фільтрації
     }
 
-    fun filterTracks(category: String) {
+    fun filterTracks() {
         viewModelScope.launch {
-            when (category) {
-                "songs" -> {
-                    val allTracks = likedTracksRepository.getTracks()
-                    _filteredTracks.value = allTracks.filter {
-                        it.title.contains(_searchQuery.value, ignoreCase = true) ||
-                                it.artist_id.toString().contains(_searchQuery.value, ignoreCase = true)
-                    }
-                }
-                "albums" -> {
-                    val allAlbums = albumRepository.getAlbums() // Передбачається, що є метод для отримання альбомів
-                    _filteredAlbums.value = allAlbums.filter {
-                        it.title.contains(_searchQuery.value, ignoreCase = true) ||
-                                it.artistId.toString().contains(_searchQuery.value, ignoreCase = true)
-                    }
-                }
-                "artists" -> {
-                    val allArtists = artistRepository.getArtists() // Передбачається, що є метод для отримання виконавців
-                    _filteredArtist.value = allArtists.filter {
-                        it.name.contains(_searchQuery.value, ignoreCase = true)
-                    }
-                }
+            val allTracks = likedTracksRepository.getTracks()
+            _filteredTracks.value = allTracks.filter {
+                it.title.contains(_searchQuery.value, ignoreCase = true) ||
+                        it.artist_id.toString().contains(_searchQuery.value, ignoreCase = true)
+            }
+        }
+    }
+
+    fun filterAlbums() {
+        viewModelScope.launch {
+            val allAlbums = albumRepository.getAlbums()
+            _filteredAlbums.value = allAlbums.filter {
+                it.title.contains(_searchQuery.value, ignoreCase = true) ||
+                        it.artistId.toString().contains(_searchQuery.value, ignoreCase = true)
+            }
+        }
+    }
+
+    fun filterArtists() {
+        viewModelScope.launch {
+            val allArtists = artistRepository.getArtists()
+            _filteredArtist.value = allArtists.filter {
+                it.name.contains(_searchQuery.value, ignoreCase = true)
+            }
+        }
+    }
+
+    fun filterComponents(category: String) {
+        when (category) {
+            "songs" -> {
+                filterTracks()
+
+            }
+            "albums" -> {
+                filterAlbums()
+            }
+            "artists" -> {
+                filterArtists()
             }
         }
     }

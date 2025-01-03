@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.musicapp.components.HeaderComponent
+import com.example.musicapp.features.main.artists.data.AlbumResult
 import com.example.musicapp.features.main.artists.data.ArtistResult
 import com.example.musicapp.features.main.artists.domain.ArtistViewModel
 import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
@@ -44,13 +45,11 @@ fun AlbumScreen(
     onTrackClick: (String) -> Unit
 ) {
     val likedTracksState by likedTracksViewModel.likedTracksState.collectAsState()
-
+    val albumState by artistViewModel.albumState.collectAsState()
     val albumDetails by artistViewModel.albumDetails.collectAsState()
     val albumTracks by artistViewModel.albumTracks.collectAsState()
 
     likedTracksViewModel.setCurrentAlbumTracks(albumTracks)
-
-    val artistState by artistViewModel.artistState.collectAsState()
 
     LaunchedEffect(albumId) {
         artistViewModel.fetchAlbumTracks(albumId)
@@ -63,8 +62,8 @@ fun AlbumScreen(
             .background(color = Black90)
             .padding(16.dp),
     ) {
-        when (val result = artistState) {
-            is ArtistResult.Loading -> {
+        when (val result = albumState) {
+            is AlbumResult.Loading -> {
                 item {
                     Box(
                         modifier = Modifier.fillParentMaxHeight(),
@@ -74,7 +73,7 @@ fun AlbumScreen(
                     }
                 }
             }
-            is ArtistResult.Success -> {
+            is AlbumResult.Success -> {
                 item {
                     Column {
                         Box(modifier = Modifier.fillMaxWidth()) {
@@ -101,16 +100,13 @@ fun AlbumScreen(
                         onLikeClick = { likedTracksViewModel.toggleLike(userId, track.id) },
                         onTrackClick = {
                             likedTracksViewModel.setCurrentSourcePage("Album")
-                            likedTracksViewModel.playTrack(
-                                track,
-                                "Album"
-                            )
+                            likedTracksViewModel.playTrack(track, "Album")
                             onTrackClick(track.id)
                         }
                     )
                 }
             }
-            is ArtistResult.Error -> {
+            is AlbumResult.Error -> {
                 item {
                     Text(
                         text = "Error: ${result.message}",

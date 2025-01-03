@@ -23,9 +23,11 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -43,6 +45,9 @@ import com.example.musicapp.ui.theme.Black90
 import com.example.musicapp.ui.theme.White80
 
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -51,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.runtime.getValue
 import coil.compose.rememberAsyncImagePainter
 import com.example.musicapp.features.main.artists.domain.ArtistViewModel
 import com.example.musicapp.features.main.artists.presentation.AlbumScreen
@@ -81,19 +87,27 @@ fun MainAppScreen(
 
     val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
 
-    val artistId = savedStateHandle?.getStateFlow<String?>("artist_id", null)?.collectAsState()
 
-    LaunchedEffect(artistId?.value) {
-        Log.d("MainAppScreenLaunch", "Listening for artist navigation with ID: ${artistId?.value}")
-        artistId?.value?.let { id ->
-            Log.d("MainAppScreenLaunch", "Navigating to artist screen $id")
-            bottomNavController.navigate("artist_screen/$id") {
+    val artistIdFlow = savedStateHandle?.getStateFlow<String?>("artist_id", null)
+    val artistId by artistIdFlow?.collectAsState() ?: remember { mutableStateOf(null) }
+    var triggerArtistNavigation by remember { mutableStateOf(0) } // Тригер для навігації
+
+    LaunchedEffect(artistId, triggerArtistNavigation) {
+        if (artistId != null) {
+            Log.d("MainAppScreenLaunch", "Navigating to artist screen $artistId")
+            bottomNavController.navigate("artist_screen/$artistId") {
                 popUpTo(bottomNavController.graph.findStartDestination().id) {
                     saveState = true
                 }
             }
-            savedStateHandle.remove<String>("artist_id")
         }
+    }
+
+    fun setArtistId(newArtistId: String?) {
+        if (newArtistId != artistId) {
+            savedStateHandle?.set("artist_id", newArtistId)
+        }
+        triggerArtistNavigation++
     }
 
     Scaffold(
@@ -179,7 +193,8 @@ fun MainAppScreen(
                         track?.let { likedTracksViewModel.playTrack(it, "Search") }
                     },
                     onArtistClick = { artistId ->
-                        savedStateHandle?.set("artist_id", artistId)
+                        setArtistId(artistId)
+//                        savedStateHandle?.set("artist_id", artistId)
                     },
                     onAlbumClick = { albumId ->
                         bottomNavController.navigate("album_screen/$albumId")
@@ -250,7 +265,8 @@ fun MainAppScreen(
                     onNavigateToAlbum = { albumId ->
                         bottomNavController.navigate("album_screen/$albumId")
                     },
-                    onBackClick = { bottomNavController.popBackStack() },
+                    onBackClick = {
+                        bottomNavController.popBackStack() },
                     onTrackClick = { trackId ->
                         val track = likedTracksViewModel.getTrackByIdSync(trackId)
                         track?.let { likedTracksViewModel.playTrack(it, "Artist") }

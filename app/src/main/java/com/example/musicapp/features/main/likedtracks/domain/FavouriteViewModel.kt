@@ -438,10 +438,11 @@ class LikedTracksViewModel @Inject constructor(
                 _currentTrack.emit(track)
                 _isPlaying.emit(true)
                 _currentSourcePage.emit(sourcePage)
-
+                startUpdatingPosition()
             } else if (!_isPlaying.value) {
                 mediaPlayerManager.resume()
                 _isPlaying.emit(true)
+                startUpdatingPosition()
             }
         }
     }
@@ -543,6 +544,7 @@ class LikedTracksViewModel @Inject constructor(
     }
 
     fun hasNextTrack(): Boolean {
+        Log.d("LikedTracksViewModel", "Current source page: ${_currentSourcePage.value}")
         return when (_currentSourcePage.value) {
             "Favourite" -> {
                 currentLikedTrackIndex?.let { it + 1 < _likedTracksState.value.tracks.size } ?: false
@@ -556,7 +558,10 @@ class LikedTracksViewModel @Inject constructor(
             "Album" -> {
                 currentAlbumTrackIndex != null && currentAlbumTrackIndex!! < _albumTracks.value.size - 1
             }
-            else -> false
+            else -> {
+                val currentIndex = _filteredTracks.value.indexOfFirst { it.id == _currentTrack.value?.id }
+                currentIndex != -1 && currentIndex + 1 < _filteredTracks.value.size
+            }
         }
     }
 

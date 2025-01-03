@@ -143,7 +143,7 @@ fun ArtistScreen(
 
                             AlbumItem(
                                 album = album,
-                                imageUrl = albumImageUrl!!,
+                                imageUrl = albumImageUrl,
                                 onClick = { onNavigateToAlbum(album.id.toString()) }
                             )
                         }
@@ -190,7 +190,7 @@ fun ArtistScreen(
 @Composable
 fun AlbumItem(
     album: Album,
-    imageUrl: String,
+    imageUrl: String?,
     onClick: () -> Unit
 ) {
     Column(
@@ -199,14 +199,31 @@ fun AlbumItem(
             .fillMaxWidth()
             .clickable(onClick = onClick)
     ) {
-        Image(
-            painter = rememberAsyncImagePainter(model = imageUrl),
-            contentDescription = "Track Image",
-            modifier = Modifier
-                .size(160.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            contentScale = ContentScale.Fit
-        )
+        if (imageUrl != null) {
+            Image(
+                painter = rememberAsyncImagePainter(model = imageUrl),
+                contentDescription = "Album Image",
+                modifier = Modifier
+                    .size(160.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                contentScale = ContentScale.Fit
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(160.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.Gray),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = "Placeholder Icon",
+                    tint = White80,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.size(8.dp))
 
@@ -218,7 +235,6 @@ fun AlbumItem(
         )
     }
 }
-
 
 fun getFirstTrackImageUrl(albumId: Int, tracks: List<Track>): String? {
     val firstTrack = tracks.firstOrNull { it.album_id == albumId }

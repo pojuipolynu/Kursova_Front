@@ -27,6 +27,9 @@ class ArtistViewModel @Inject constructor(
     private val _tracks = MutableStateFlow<List<Track>>(emptyList())
     val tracks: StateFlow<List<Track>> = _tracks.asStateFlow()
 
+    private val _albumState = MutableStateFlow<AlbumResult>(AlbumResult.Loading)
+    val albumState: StateFlow<AlbumResult> = _albumState.asStateFlow()
+
     private val _albumDetails = MutableStateFlow<AlbumResponse?>(null)
     val albumDetails: StateFlow<AlbumResponse?> = _albumDetails.asStateFlow()
 
@@ -55,21 +58,50 @@ class ArtistViewModel @Inject constructor(
         }
     }
 
+
     fun fetchAlbumDetails(albumId: String) {
         viewModelScope.launch {
+            _albumState.value = AlbumResult.Loading
             try {
                 val details = artistRepository.getAlbumDetails(albumId)
                 _albumDetails.value = details
+                _albumState.value = AlbumResult.Success
             } catch (e: Exception) {
                 Log.e("ArtistViewModel", "Error fetching album details: ${e.message}")
+                _albumState.value = AlbumResult.Error(e.message ?: "Unknown error")
             }
         }
     }
 
     fun fetchAlbumTracks(albumId: String) {
         viewModelScope.launch {
-            _albumTracks.value = artistRepository.getAlbumTracks(albumId)
+            try {
+                _albumTracks.value = artistRepository.getAlbumTracks(albumId)
+            } catch (e: Exception) {
+                Log.e("ArtistViewModel", "Error fetching album tracks: ${e.message}")
+                _albumState.value = AlbumResult.Error(e.message ?: "Unknown error")
+            }
         }
     }
+
+//    fun fetchAlbumDetails(albumId: String) {
+//        viewModelScope.launch {
+//            try {
+//                val details = artistRepository.getAlbumDetails(albumId)
+//                _albumDetails.value = details
+//            } catch (e: Exception) {
+//                Log.e("ArtistViewModel", "Error fetching album details: ${e.message}")
+//            }
+//        }
+//    }
+//
+//    fun fetchAlbumTracks(albumId: String) {
+//        viewModelScope.launch {
+//            _albumTracks.value = artistRepository.getAlbumTracks(albumId)
+//        }
+//    }
 }
+
+
+
 

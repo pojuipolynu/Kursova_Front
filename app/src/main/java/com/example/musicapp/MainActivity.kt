@@ -48,8 +48,8 @@ class MainActivity : ComponentActivity() {
 
                     NavHost(
                         navController = navController,
-                        startDestination = "main_graph"
-//                        startDestination = if (authViewModel.isUserLoggedIn()) "main_graph" else "auth_graph"
+//                        startDestination = "main_graph"
+                        startDestination = if (authViewModel.isUserLoggedIn()) "main_graph" else "auth_graph"
                     ) {
                         authGraph(navController, authViewModel)
                         mainGraph(navController, authViewModel, likedTracksViewModel, artistViewModel)

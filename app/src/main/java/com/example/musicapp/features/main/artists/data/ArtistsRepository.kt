@@ -77,4 +77,10 @@ sealed class ArtistResult {
     data class Error(val message: String) : ArtistResult()
 }
 
+sealed class AlbumResult {
+    object Loading : AlbumResult()
+    object Success : AlbumResult()
+    data class Error(val message: String) : AlbumResult()
+}
+
 

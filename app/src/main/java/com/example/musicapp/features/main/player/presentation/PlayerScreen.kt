@@ -233,7 +233,17 @@ fun PlayerScreen(
                     tint = White80
                 )
             }
-            IconButton(onClick = onNextClick) {
+            IconButton(
+                onClick = {
+                    val hasNextTrack = likedTracksViewModel.hasNextTrack()
+                    if (hasNextTrack) {
+                        onNextClick()
+                    } else {
+                        onPlayClick()
+                        onBackClick()
+                    }
+                }
+            ) {
                 Icon(
                     imageVector = Icons.Filled.SkipNext,
                     contentDescription = "Next",

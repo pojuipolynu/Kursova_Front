@@ -542,6 +542,19 @@ class LikedTracksViewModel @Inject constructor(
         }
     }
 
+    fun hasNextTrack(): Boolean {
+        return when (_currentSourcePage.value) {
+            "Favourite" -> {
+                currentLikedTrackIndex?.let { it + 1 < _likedTracksState.value.tracks.size } ?: false
+            }
+            "Playlist" -> {
+                currentPlaylistTrackIndex?.let { it + 1 < _playlistTracks.value.size } ?: false
+            }
+            else -> false
+        }
+    }
+
+
     private fun startUpdatingPosition() {
         viewModelScope.launch {
             while (_isPlaying.value) {

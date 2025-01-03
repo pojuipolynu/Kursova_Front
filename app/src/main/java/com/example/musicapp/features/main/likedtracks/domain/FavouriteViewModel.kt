@@ -119,6 +119,12 @@ class LikedTracksViewModel @Inject constructor(
     private val _playlistTracks = MutableStateFlow<List<Track>>(emptyList())
     val playlistTracks: StateFlow<List<Track>> = _playlistTracks
 
+    private val _artistTracks = MutableStateFlow<List<Track>>(emptyList())
+    val artistTracks: StateFlow<List<Track>> = _artistTracks
+
+    private val _albumTracks = MutableStateFlow<List<Track>>(emptyList())
+    val albumTracks: StateFlow<List<Track>> = _albumTracks
+
     private val _currentSourcePage = MutableStateFlow<String?>(null)
     val currentSourcePage: StateFlow<String?> = _currentSourcePage
 
@@ -128,6 +134,10 @@ class LikedTracksViewModel @Inject constructor(
     private var currentLikedTrackIndex: Int? = null
 
     private var currentPlaylistTrackIndex: Int? = null
+
+    private var currentArtistTrackIndex: Int? = null
+
+    private var currentAlbumTrackIndex: Int? = null
 
     fun setCurrentSourcePage(page: String) {
         _currentSourcePage.value = page
@@ -139,6 +149,14 @@ class LikedTracksViewModel @Inject constructor(
 
     fun setCurrentPlaylistTracks(tracks:List<Track>) {
         _playlistTracks.value = tracks
+    }
+
+    fun setCurrentArtistTracks(tracks:List<Track>) {
+        _artistTracks.value = tracks
+    }
+
+    fun setCurrentAlbumTracks(tracks:List<Track>) {
+        _albumTracks.value = tracks
     }
 
     fun updateCurrentLikedTrackIndex(trackId:String) {
@@ -156,6 +174,20 @@ class LikedTracksViewModel @Inject constructor(
         currentPlaylistTrackIndex = _playlistTracks.value.indexOfFirst { it.id == trackId }
         if (currentPlaylistTrackIndex == -1) {
             currentPlaylistTrackIndex = null
+        }
+    }
+
+    fun updateCurrentArtistTrackIndex(trackId:String) {
+        currentArtistTrackIndex = _artistTracks.value.indexOfFirst { it.id == trackId }
+        if (currentArtistTrackIndex == -1) {
+            currentArtistTrackIndex = null
+        }
+    }
+
+    fun updateCurrentAlbumTrackIndex(trackId:String) {
+        currentAlbumTrackIndex = _albumTracks.value.indexOfFirst { it.id == trackId }
+        if (currentAlbumTrackIndex == -1) {
+            currentAlbumTrackIndex = null
         }
     }
 
@@ -394,6 +426,12 @@ class LikedTracksViewModel @Inject constructor(
                 if (sourcePage == "Playlist") {
                     updateCurrentPlaylistTrackIndex(track.id)
                 }
+                if (sourcePage == "Artist") {
+                    updateCurrentArtistTrackIndex(track.id)
+                }
+                if (sourcePage == "Album") {
+                    updateCurrentAlbumTrackIndex(track.id)
+                }
                 mediaPlayerManager.play(track.fileUrl) {
                     playNextTrack()
                 }
@@ -405,6 +443,44 @@ class LikedTracksViewModel @Inject constructor(
                 mediaPlayerManager.resume()
                 _isPlaying.emit(true)
             }
+        }
+    }
+
+    private fun playNextAlbumTrack() {
+        if (currentAlbumTrackIndex != null) {
+            val nextIndex = currentAlbumTrackIndex!! + 1
+            val tracks = _albumTracks.value
+            if (nextIndex in tracks.indices) {
+                val nextTrack = tracks[nextIndex]
+                Log.d("LikedTracksViewModel", "Playing next favourite track: $nextTrack")
+                playTrack(nextTrack, "Album")
+            } else {
+                Log.d("LikedTracksViewModel", "End of favourite tracks. Stopping playback.")
+                _isPlaying.value = false
+                _currentTrack.value = null
+                mediaPlayerManager.pause()
+            }
+        } else {
+            Log.e("LikedTracksViewModel", "Current album track index is null.")
+        }
+    }
+
+    private fun playNextArtistTrack() {
+        if (currentArtistTrackIndex != null) {
+            val nextIndex = currentArtistTrackIndex!! + 1
+            val tracks = _artistTracks.value
+            if (nextIndex in tracks.indices) {
+                val nextTrack = tracks[nextIndex]
+                Log.d("LikedTracksViewModel", "Playing next favourite track: $nextTrack")
+                playTrack(nextTrack, "Artist")
+            } else {
+                Log.d("LikedTracksViewModel", "End of favourite tracks. Stopping playback.")
+                _isPlaying.value = false
+                _currentTrack.value = null
+                mediaPlayerManager.pause()
+            }
+        } else {
+            Log.e("LikedTracksViewModel", "Current track index is null.")
         }
     }
 
@@ -423,7 +499,7 @@ class LikedTracksViewModel @Inject constructor(
                 mediaPlayerManager.pause()
             }
         } else {
-            Log.e("LikedTracksViewModel", "Current track index is null.")
+            Log.e("LikedTracksViewModel", "Current artist track index is null.")
         }
     }
 
@@ -450,6 +526,8 @@ class LikedTracksViewModel @Inject constructor(
         when (_currentSourcePage.value) {
             "Favourite" -> playNextFavouriteTrack()
             "Playlist" -> playNextPlaylistTrack()
+            "Artist" -> playNextArtistTrack()
+            "Album" -> playNextAlbumTrack()
             else -> {
                 val currentIndex = _filteredTracks.value.indexOfFirst { it.id == _currentTrack.value?.id }
                 if (currentIndex != -1 && currentIndex + 1 < _filteredTracks.value.size) {
@@ -484,6 +562,38 @@ class LikedTracksViewModel @Inject constructor(
             _currentTrack.value?.let { track ->
                 playTrack(track, sourcePage)
             }
+        }
+    }
+
+    private fun playPreviousAlbumTrack() {
+        if (currentAlbumTrackIndex != null) {
+            val previousIndex = currentAlbumTrackIndex!! - 1
+            val tracks = _albumTracks.value
+            if (previousIndex in tracks.indices) {
+                val previousTrack = tracks[previousIndex]
+                Log.d("LikedTracksViewModel", "Playing previous favourite track: $previousTrack")
+                playTrack(previousTrack, "Favourite")
+            } else {
+                Log.d("LikedTracksViewModel", "Start of favourite tracks.")
+            }
+        } else {
+            Log.e("LikedTracksViewModel", "Current album track index is null.")
+        }
+    }
+
+    private fun playPreviousArtistTrack() {
+        if (currentArtistTrackIndex != null) {
+            val previousIndex = currentArtistTrackIndex!! - 1
+            val tracks = _artistTracks.value
+            if (previousIndex in tracks.indices) {
+                val previousTrack = tracks[previousIndex]
+                Log.d("LikedTracksViewModel", "Playing previous favourite track: $previousTrack")
+                playTrack(previousTrack, "Favourite")
+            } else {
+                Log.d("LikedTracksViewModel", "Start of favourite tracks.")
+            }
+        } else {
+            Log.e("LikedTracksViewModel", "Current track index is null.")
         }
     }
 
@@ -523,6 +633,8 @@ class LikedTracksViewModel @Inject constructor(
         when (_currentSourcePage.value) {
             "Favourite" -> playPreviousFavouriteTrack()
             "Playlist" -> playPreviousPlaylistTrack()
+            "Artist" -> playPreviousArtistTrack()
+            "Album" -> playPreviousAlbumTrack()
             else -> {
                 val currentIndex = _filteredTracks.value.indexOfFirst { it.id == _currentTrack.value?.id }
                 if (currentIndex != -1 && currentIndex - 1 >= 0) {

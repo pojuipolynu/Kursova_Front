@@ -71,6 +71,8 @@ fun ArtistScreen(
     val albums by artistViewModel.albums.collectAsState()
     val tracks by artistViewModel.tracks.collectAsState()
 
+    likedTracksViewModel.setCurrentArtistTracks(tracks)
+
     LaunchedEffect(artistId) {
         artistViewModel.fetchArtistDetails(artistId)
         artistViewModel.fetchArtistAlbums(artistId)
@@ -161,9 +163,10 @@ fun ArtistScreen(
                         isLiked = likedTracksState.likedTrackIds.contains(track.id.toString()),
                         onLikeClick = { likedTracksViewModel.toggleLike(userId, track.id) },
                         onTrackClick = {
+                            likedTracksViewModel.setCurrentSourcePage("Artist")
                             likedTracksViewModel.playTrack(
                                 track,
-                                "Favorite"
+                                "Artist"
                             )
                             onTrackClick(track.id)
                         }

@@ -253,7 +253,7 @@ fun MainAppScreen(
                     onBackClick = { bottomNavController.popBackStack() },
                     onTrackClick = { trackId ->
                         val track = likedTracksViewModel.getTrackByIdSync(trackId)
-                        track?.let { likedTracksViewModel.playTrack(it, "Favourite") }
+                        track?.let { likedTracksViewModel.playTrack(it, "Artist") }
                     }
                 )
             }
@@ -268,7 +268,7 @@ fun MainAppScreen(
                     onBackClick = { bottomNavController.popBackStack() },
                     onTrackClick = { trackId ->
                         val track = likedTracksViewModel.getTrackByIdSync(trackId)
-                        track?.let { likedTracksViewModel.playTrack(it, "Favourite") }
+                        track?.let { likedTracksViewModel.playTrack(it, "Album") }
                     }
                 )
             }

@@ -2,10 +2,12 @@ package com.example.musicapp.features.auth.data
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import com.example.musicapp.R
+import com.example.musicapp.api.ApiService
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
@@ -20,7 +22,8 @@ import javax.inject.Singleton
 class AuthRepository @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val authPreferencesManager: AuthPreferencesManager,
-    private val context: Context
+    private val context: Context,
+    private val apiService: ApiService
 ) {
     private val _authResult = MutableStateFlow<AuthResult>(
         if (authPreferencesManager.isUserLoggedIn())
@@ -87,8 +90,22 @@ class AuthRepository @Inject constructor(
             UserData(
                 userId = it.uid,
                 username = it.displayName,
-                profilePictureUrl = it.photoUrl?.toString()
+                email = it.email,
             )
+        }
+    }
+
+    fun getCurrentUserId(): String? {
+        Log.d("userID","Current user id: ${firebaseAuth.currentUser?.uid}")
+        return firebaseAuth.currentUser?.uid ?: "1"
+    }
+
+    suspend fun setUserStatus() {
+        try {
+            Log.d("setUserStatus", "Setting status for userId: ${firebaseAuth.currentUser?.uid}")
+            apiService.setUserStatus(firebaseAuth.currentUser?.uid ?: " ")
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Error setting user status: ${e.message}")
         }
     }
 

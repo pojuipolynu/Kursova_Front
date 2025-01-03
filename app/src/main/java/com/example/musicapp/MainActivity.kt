@@ -8,27 +8,26 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.example.musicapp.features.auth.presentation.LoginScreen
 import com.example.musicapp.features.main.MainAppScreen
 import com.example.musicapp.ui.theme.MusicAppTheme
 import com.example.musicapp.features.auth.domain.AuthViewModel
 import com.example.musicapp.features.main.likedtracks.domain.LikedTracksViewModel
-import com.example.musicapp.features.main.likedtracks.presentation.FavouriteScreen
-import com.example.musicapp.features.main.likedtracks.presentation.TrackPlayerScreen
-import com.example.musicapp.features.main.profile.presentation.ProfileScreen
-import com.example.musicapp.features.main.search.presentation.SearchScreen
+import com.example.musicapp.features.main.player.presentation.PlayerScreen
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -45,30 +44,13 @@ class MainActivity : ComponentActivity() {
                     val authViewModel: AuthViewModel = hiltViewModel()
                     val likedTracksViewModel: LikedTracksViewModel = hiltViewModel()
 
-//                    CoroutineScope(Dispatchers.IO).launch {
-//                        try {
-//                            // Отримуємо дані з API
-//                            val post = RetrofitInstance.apiService.getPost()
-//
-//                            // Виводимо результат у консоль
-//                            withContext(Dispatchers.Main) {
-//                                Log.d("API Response", "Title: ${post.title}")
-//                                Log.d("API Response", "Body: ${post.body}")
-//                            }
-//                        } catch (e: Exception) {
-//                            withContext(Dispatchers.Main) {
-//                                Log.e("API Error", "Error fetching data: ${e.message}")
-//                            }
-//                        }
-//                    }
-
                     NavHost(
                         navController = navController,
                         startDestination = "main_graph"
 //                        startDestination = if (authViewModel.isUserLoggedIn()) "main_graph" else "auth_graph"
                     ) {
                         authGraph(navController, authViewModel)
-                        mainGraph(navController, authViewModel, likedTracksViewModel)
+                        mainGraph(navController, likedTracksViewModel)
                     }
                 }
             }
@@ -84,6 +66,9 @@ fun NavGraphBuilder.authGraph(navController: NavHostController, authViewModel: A
                 authViewModel = authViewModel,
                 activity = navController.context as MainActivity,
                 onLoginSuccess = {
+                    authViewModel.viewModelScope.launch {
+                        authViewModel.saveUserStatus()
+                    }
                     navController.navigate("main_graph") {
                         popUpTo("auth_graph") { inclusive = true }
                     }
@@ -93,27 +78,45 @@ fun NavGraphBuilder.authGraph(navController: NavHostController, authViewModel: A
     }
 }
 
-fun NavGraphBuilder.mainGraph(navController: NavHostController, authViewModel: AuthViewModel, likedTracksViewModel: LikedTracksViewModel) {
+fun NavGraphBuilder.mainGraph(navController: NavHostController, likedTracksViewModel: LikedTracksViewModel) {
     navigation(startDestination = "main", route = "main_graph") {
-        composable("main") {
-            MainAppScreen(
-                authViewModel = authViewModel,
-                onLogout = {
-                    navController.navigate("auth_graph") {
-                        popUpTo("main_graph") { inclusive = true }
-                    }
-                }
-            )
-        }
-        composable("profile") { ProfileScreen() }
-        composable("search") { SearchScreen() }
-        composable("favourite") {
-            FavouriteScreen(
-                onTrackClick = { trackId ->
-                    Log.d("FavouriteScreen", "Track ID: $trackId")
-                    navController.navigate("trackDetails/$trackId")
-                }
-            )
+        composable("main") { MainAppScreen(
+            likedTracksViewModel = likedTracksViewModel,
+            navController = navController,
+        ) }
+
+        composable("player_screen") {
+            val currentTrack by likedTracksViewModel.currentTrack.collectAsState()
+            val currentPosition by likedTracksViewModel.currentPosition.collectAsState()
+            val isPlaying by likedTracksViewModel.isPlaying.collectAsState()
+
+            LaunchedEffect(currentTrack) {
+                Log.d("MainScreen", "Current track changed: ${currentTrack?.id}")
+            }
+
+            Log.d("PlayerScreen", "Current track: $currentTrack")
+            Log.d("PlayerScreen", "Is playing: $isPlaying")
+
+
+            currentTrack?.let { track ->
+                PlayerScreen(
+                    track = track,
+                    isPlaying = isPlaying,
+                    currentPosition = currentPosition,
+                    onPlayClick = {
+                        likedTracksViewModel.togglePlayPause(likedTracksViewModel.currentSourcePage.value ?: "Unknown")
+                    },
+                    onTrackClick = {
+                        likedTracksViewModel.playTrack(track, likedTracksViewModel.currentSourcePage.value ?: "Unknown")
+                    },
+                    onNextClick = { likedTracksViewModel.skipToNextTrack() },
+                    onPreviousClick = { likedTracksViewModel.skipToPreviousTrack() },
+                    onSeekTo = { newPosition -> likedTracksViewModel.seekTo(newPosition.toInt()) },
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
         }
     }
 }
+
+

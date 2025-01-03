@@ -550,6 +550,12 @@ class LikedTracksViewModel @Inject constructor(
             "Playlist" -> {
                 currentPlaylistTrackIndex?.let { it + 1 < _playlistTracks.value.size } ?: false
             }
+            "Artist" -> {
+                currentArtistTrackIndex != null && currentArtistTrackIndex!! < _artistTracks.value.size - 1
+            }
+            "Album" -> {
+                currentAlbumTrackIndex != null && currentAlbumTrackIndex!! < _albumTracks.value.size - 1
+            }
             else -> false
         }
     }

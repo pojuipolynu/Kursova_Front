@@ -331,10 +331,10 @@ fun AlbumRow(
             contentDescription = "Album Image",
             modifier = Modifier
                 .size(60.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .padding(end = 8.dp),
+                .clip(RoundedCornerShape(4.dp)),
             contentScale = ContentScale.Fit
         )
+        Spacer(modifier = Modifier.width(8.dp))
         Column(
             modifier = Modifier.weight(1f)
         ) {
@@ -344,11 +344,11 @@ fun AlbumRow(
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            Text(
-                text = album.artistId.toString(),
-                color = White80,
-                style = MaterialTheme.typography.labelSmall
-            )
+//            Text(
+//                text = album.artistId.toString(),
+//                color = White80,
+//                style = MaterialTheme.typography.labelSmall
+//            )
         }
         }
     }
@@ -372,10 +372,10 @@ fun ArtistRow(
             contentDescription = "Album Image",
             modifier = Modifier
                 .size(60.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .padding(end = 8.dp),
+                .clip(RoundedCornerShape(4.dp)),
             contentScale = ContentScale.Fit
         )
+        Spacer(modifier = Modifier.width(8.dp))
         Column(
             modifier = Modifier.weight(1f)
         ) {
